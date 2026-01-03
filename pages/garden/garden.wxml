@@ -1,0 +1,214 @@
+<!--pages/garden/garden.wxml-->
+<!-- 背景层 -->
+<view class="background-container">
+  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
+</view>
+
+<!-- 用户信息区域 -->
+<view class="user-profile">
+  <!-- 用户头像和信息水平布局 -->
+  <view class="user-header">
+    <!-- 用户头像（个人资料头像） -->
+    <view class="avatar-section">
+      <image class="user-avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
+    </view>
+
+  <!-- 用户信息 -->
+  <view class="user-info">
+    <view class="user-info-row" wx:if="{{!isLoggedIn}}">
+      <view class="action-btn login-btn" bindtap="quickLogin">
+        <text class="btn-text">登录一下</text>
+      </view>
+    </view>
+    <view class="user-info-row" wx:if="{{isLoggedIn}}">
+      <text class="user-name-display">{{userInfo.name}}</text>
+      <view class="action-btn edit-btn" bindtap="editProfile">
+        <text class="btn-text">设置一下</text>
+      </view>
+    </view>
+    <text class="user-description">{{userInfo.description || '在春日的草原上，寻找自己的生活节奏'}}</text>
+  </view>
+  </view>
+
+  <!-- 用户数据 -->
+  <view class="user-stats">
+    <view class="stat-item">
+      <text class="stat-number">{{userInfo.daysCount || 0}}</text>
+      <text class="stat-label">登录天数</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-number">{{userInfo.listenCount || 0}}</text>
+      <text class="stat-label">收听数量</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-number">{{userInfo.readCount || 0}}</text>
+      <text class="stat-label">阅读数量</text>
+    </view>
+  </view>
+
+  <!-- A4区域 -->
+  <view class="a4-preview-section">
+    <view class="a4-preview-container">
+      <view class="a4-preview-paper">
+        <!-- 小绵羊的打卡站 -->
+        <view class="a4-column checkin-station" hover-class="zoom" bindtap="openCheckinPage">
+          <view class="column-header">
+            <image class="column-image" src="/assets/images/日历.png" mode="aspectFit" />
+            <view class="title-section">
+              <view class="title-row">
+                <text class="column-title">小绵羊的打卡站</text>
+                <text class="separator">｜</text>
+                <text class="column-desc-inline">开启盲盒形象</text>
+              </view>
+              <view class="column-status">
+                <text class="status-text">已打卡 {{checkinDays}} 天 · 解锁形象 {{unlockedImages}} 个</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 小绵羊的会员馆 -->
+        <view class="a4-column membership-hall" hover-class="zoom" bindtap="openVip">
+          <view class="column-header">
+            <image class="column-image" src="/assets/images/会员.png" mode="aspectFit" />
+            <view class="title-section">
+              <view class="title-row">
+                <text class="column-title">小绵羊的会员馆</text>
+                <text class="separator">｜</text>
+                <text class="column-desc-inline">解锁专属功能</text>
+              </view>
+              <view class="column-status">
+                <text class="status-text" wx:if="{{!isVip}}">还不是会员｜点击查看会员详情</text>
+                <text class="status-text" wx:if="{{isVip}}">{{vipExpiry}}｜点击查看会员详情</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 小绵羊的收藏库 -->
+        <view class="a4-column collection-library" hover-class="zoom" bindtap="openCollection">
+          <view class="column-header">
+            <image class="column-image" src="/assets/images/收藏.png" mode="aspectFit" />
+            <view class="title-section">
+              <view class="title-row">
+                <text class="column-title">小绵羊的收藏库</text>
+                <text class="separator">｜</text>
+                <text class="column-desc-inline">珍藏美好时光</text>
+              </view>
+              <view class="column-status">
+                <text class="status-text">随身听 {{audioCount}} 个 · 成长卡 {{cardCount}} 个</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  </view>
+
+  <!-- 悬浮形象和提示文字 -->
+  <view class="floating-character-section">
+    <!-- 提示文字 -->
+    <view class="character-tip-text">
+      <text class="tip-content">和春小咩一起打卡，可解锁更多形象哦！</text>
+    </view>
+
+    <!-- 悬浮形象 - 使用当前选择的形象 -->
+    <image class="floating-character" src="{{currentAvatar || '/assets/images/小卡片默认形象.png'}}" mode="aspectFit" bindtap="onCharacterTap" />
+  </view>
+
+  <!-- 设置选项 -->
+<view class="settings-section">
+  <view class="setting-item" bindtap="openAbout">
+    <image class="setting-image" src="/assets/images/关于我们.png" mode="aspectFit" />
+    <text class="setting-text">关于我们</text>
+    <text class="setting-arrow">></text>
+  </view>
+  <view class="setting-item" bindtap="openHelp">
+    <image class="setting-image" src="/assets/images/帮助中心.png" mode="aspectFit" />
+    <text class="setting-text">帮助中心</text>
+    <text class="setting-arrow">></text>
+  </view>
+</view>
+
+<!-- 漂浮的小泡泡 -->
+<view class="worry-bubble" 
+      catchtouchmove="onBubbleTouchMove" 
+      catchtouchstart="onBubbleTouchStart"
+      catchtouchend="onBubbleTouchEnd"
+      style="left: {{bubbleLeft}}px; top: {{bubbleTop}}px;"
+      wx:if="{{!showWorryModal && !isAnimating && !showAboutModal}}">
+  <view class="bubble-circle">
+    <view class="icon-bubbles">
+      <view class="icon-bubble ib-1"></view>
+      <view class="icon-bubble ib-2"></view>
+      <view class="icon-bubble ib-3"></view>
+    </view>
+  </view>
+  <view class="bubble-text">烦恼橡皮擦</view>
+</view>
+
+<!-- 烦恼输入模态框 -->
+<view class="custom-modal-mask" wx:if="{{showWorryModal}}" bindtap="closeWorryModal">
+  <view class="custom-modal-content worry-modal-content" catchtap="stopProp">
+    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+    <view class="modal-body">
+      <view class="modal-title">把烦恼告诉小绵羊</view>
+      <textarea class="worry-input" placeholder="在这里写下你的烦恼..." bindinput="onWorryInput" value="{{worryText}}" maxlength="50"></textarea>
+      
+      <!-- 按钮容器：水平排列 -->
+      <view class="action-btn-row">
+        <!-- 语音输入按钮 -->
+        <view class="voice-btn-container" 
+              catchtouchstart="startRecord" 
+              catchtouchend="stopRecord"
+              hover-class="voice-btn-hover">
+          <text class="voice-icon">🎤</text>
+          <text class="voice-text">{{isRecording ? '松开' : '按住说话'}}</text>
+        </view>
+
+        <!-- 提交按钮 -->
+        <view class="modal-btn" bindtap="submitWorry">一 起 弹 走 烦 恼 吧</view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 动画层 -->
+<view class="animation-layer" wx:if="{{isAnimating}}">
+  <!-- 奔跑的小羊 -->
+  <view class="running-sheep-container">
+    <image class="running-sheep-image" src="/assets/images/小绵羊.png" mode="aspectFit" />
+  </view>
+  
+  <!-- 掉落的眼泪（文字） -->
+  <view wx:for="{{fallingChars}}" wx:key="index" class="falling-char" style="left:{{item.left}}%; font-size:{{item.size}}rpx; animation-duration:{{item.duration}}s; animation-delay:{{item.delay}}s; --bounce-dir:{{item.bounceDir}};">
+    {{item.char}}
+  </view>
+
+  <!-- 鼓励语 (独立于小羊容器，全屏居中显示) -->
+  <view class="encouraging-text" wx:if="{{showEncouragingText}}">{{encouragingText}}</view>
+
+  <!-- 关闭按钮 -->
+  <view class="close-animation-btn" bindtap="closeAnimation">×</view>
+</view>
+
+<!-- 关于我们自定义模态框 -->
+<view class="custom-modal-mask" wx:if="{{showAboutModal}}" bindtap="closeAboutModal">
+  <view class="custom-modal-content">
+    <!-- 模态框背景 -->
+    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+
+    <!-- 模态框内容 -->
+    <view class="modal-body">
+      <view class="modal-title">关于我们</view>
+      <view class="modal-text">
+        <text class="modal-paragraph">成长，是春天里一场温暖的旅行。“一只绵羊的春天”，是我们共同的故事。这里没有急匆匆的跑道，只有慢慢舒展的绿草地；没有遥远的终点，只有值得珍藏的沿途星光。</text>
+        <text class="modal-paragraph">我们愿做与你并肩的小绵羊，在每一片阳光里轻轻打滚。让我们陪着你，像春天陪着嫩芽，像云朵陪着微风，不慌不忙，快乐生长。</text>
+      </view>
+      <!-- 落款 -->
+      <view class="modal-signature">@绵羊团队</view>
+    </view>
+  </view>
+</view>
+

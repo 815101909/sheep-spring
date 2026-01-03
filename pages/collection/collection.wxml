@@ -1,0 +1,86 @@
+<view class="collection-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+
+  <!-- 页面内容 -->
+  <view class="collection-content">
+    <!-- 收藏统计 -->
+    <view class="stats-section">
+      <view class="stat-item">
+        <text class="stat-number">{{favoriteSongsCount}}</text>
+        <text class="stat-label">随身听</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{favoriteArticlesCount}}</text>
+        <text class="stat-label">成长卡</text>
+      </view>
+    </view>
+
+    <!-- 标签页切换 -->
+    <view class="tab-section">
+      <view class="tab-item {{activeTab === 'music' ? 'active' : ''}}" bindtap="switchTab" data-tab="music">
+        <text class="tab-text">初春牧歌</text>
+        <view class="tab-indicator" wx:if="{{activeTab === 'music'}}"></view>
+      </view>
+      <view class="tab-item {{activeTab === 'articles' ? 'active' : ''}}" bindtap="switchTab" data-tab="articles">
+        <text class="tab-text">仲春蹄印</text>
+        <view class="tab-indicator" wx:if="{{activeTab === 'articles'}}"></view>
+      </view>
+    </view>
+
+    <!-- 电台收藏列表 -->
+    <view class="list-section" wx:if="{{activeTab === 'music'}}">
+      <view class="section-header">
+        <text class="section-title">收藏的电台</text>
+        <text class="section-count">共 {{favoriteSongsCount}} 首</text>
+      </view>
+
+      <view class="empty-state" wx:if="{{favoriteSongs.length === 0}}">
+        <text class="empty-icon">🎵</text>
+        <text class="empty-text">还没有收藏的电台</text>
+        <text class="empty-desc">去初春牧歌页面发现喜欢的电台吧</text>
+      </view>
+
+      <view class="music-list" wx:else>
+        <view class="music-item" wx:for="{{favoriteSongs}}" wx:key="songKey">
+          <image class="music-cover" src="/assets/images/music.png" mode="aspectFit" />
+          <view class="music-info">
+            <text class="music-title">{{item.title}}</text>
+            <text class="music-artist">{{item.artist}}</text>
+          </view>
+          <view class="play-btn" bindtap="playSong" data-song="{{item}}">
+            <text class="play-icon"></text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 知识收藏列表 -->
+    <view class="list-section" wx:if="{{activeTab === 'articles'}}">
+      <view class="section-header">
+        <text class="section-title">收藏的知识</text>
+        <text class="section-count">共 {{favoriteArticlesCount}} 篇</text>
+      </view>
+
+      <view class="empty-state" wx:if="{{favoriteArticles.length === 0}}">
+        <text class="empty-icon">📖</text>
+        <text class="empty-text">还没有收藏的知识</text>
+        <text class="empty-desc">去仲春蹄印页面发现喜欢的知识吧</text>
+      </view>
+
+      <view class="article-list" wx:else>
+        <view class="film-card collection-card {{item.cardType === 'small' ? 'small-card' : 'main-card'}}" wx:for="{{favoriteArticles}}" wx:key="id" bindtap="readArticle" data-article="{{item}}">
+          <view class="film-texture"></view>
+          <view class="card-cover {{item.category === '放松' ? 'relax-cover' : ''}}">
+            <image class="cover-image" src="{{item.cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
+            <view class="card-bar">
+              <text class="card-bar-text">{{ item.cardType === 'small' ? (item.subtitle || item.titleCn) : item.titleCn }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+

@@ -1,0 +1,4 @@
+<!--pages/sheep/sheep.wxml-->
+<view class="container">
+  <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill"></image>
+</view>

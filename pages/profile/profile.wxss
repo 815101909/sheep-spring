@@ -1,0 +1,388 @@
+/* pages/profile/profile.wxss */
+
+/* 页面整体样式 */
+page {
+  height: 100vh;
+  background: #f8f9fa;
+  overflow: hidden; /* 防止页面滚动 */
+}
+
+/* 背景层 */
+.background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.3;
+}
+
+.background-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 主要内容 */
+.profile-content {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  padding: 30rpx 30rpx 40rpx;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 头像区域 */
+.avatar-section {
+  margin-bottom: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.current-avatar-container {
+  margin-bottom: 30rpx;
+}
+
+.current-avatar {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 75rpx;
+  border: 4rpx solid rgba(255, 250, 205, 0.8);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+}
+
+.name-edit-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16rpx;
+  cursor: pointer;
+}
+
+.current-avatar-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+  margin-right: 8rpx;
+}
+
+.name-input-inline {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: bold;
+  text-align: center;
+  background: transparent;
+  border: 1rpx solid rgba(255, 250, 205, 0.8);
+  border-radius: 6rpx;
+  padding: 4rpx 8rpx;
+  width: 160rpx;
+  margin-right: 8rpx;
+}
+
+.confirm-icon {
+  color: #228B22;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.edit-icon {
+  font-size: 24rpx;
+  opacity: 0.6;
+  transform: translateY(2rpx);
+}
+
+
+.avatar-choices {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+}
+
+.avatar-choice {
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 55rpx;
+  border: 3rpx solid rgba(255, 250, 205, 0.5);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.avatar-choice.active {
+  border-color: #228B22;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.avatar-choice:hover {
+  transform: scale(1.05);
+}
+
+.choice-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+
+/* 头像区域 */
+.avatar-section {
+  position: relative;
+  margin-bottom: 30rpx;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 6rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.user-avatar:active {
+  transform: scale(0.95);
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.avatar-section:hover .avatar-overlay,
+.avatar-section:active .avatar-overlay {
+  opacity: 1;
+}
+
+.change-avatar-text {
+  color: white;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+/* 用户名区域 */
+.name-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* 用户名显示 */
+.name-display {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background: rgba(255, 250, 205, 0.1);
+  border-radius: 16rpx;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.name-display:active {
+  background: rgba(255, 250, 205, 0.2);
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-right: 12rpx;
+}
+
+.edit-icon {
+  font-size: 24rpx;
+  opacity: 0.6;
+  transform: translateY(2rpx);
+}
+
+/* 用户名编辑 */
+.name-edit {
+  width: 100%;
+  max-width: 400rpx;
+}
+
+.name-input {
+  width: 100%;
+  padding: 16rpx 20rpx;
+  border: 2rpx solid #e1e8ed;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  margin-bottom: 20rpx;
+  background: white;
+}
+
+.name-buttons {
+  display: flex;
+  gap: 20rpx;
+}
+
+.cancel-btn, .confirm-btn {
+  flex: 1;
+  height: 60rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-btn {
+  background: #f8f9fa;
+  color: #666;
+  border: 2rpx solid #e1e8ed;
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+/* 设置选项 */
+.settings-section {
+  /* 透明背景 */
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  margin-bottom: 15rpx;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-item:active {
+  opacity: 0.7;
+}
+
+.setting-value {
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+.setting-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.setting-icon {
+  font-size: 32rpx;
+  margin-right: 20rpx;
+  width: 40rpx;
+  text-align: center;
+}
+
+.setting-text {
+  font-size: 28rpx;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.setting-arrow {
+  font-size: 24rpx;
+  color: #95a5a6;
+}
+
+/* 退出登录样式 */
+.logout-item {
+  border-top: 4rpx solid rgba(231, 76, 60, 0.1);
+  margin-top: 40rpx;
+}
+
+.logout-text {
+  color: #e74c3c;
+}
+
+/* 开关样式 */
+.music-switch {
+  transform: scale(0.9);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .profile-content {
+    padding: 30rpx 20rpx 40rpx;
+  }
+
+  .user-section {
+    padding: 30rpx 20rpx;
+    margin-bottom: 30rpx;
+  }
+
+  .user-avatar {
+    width: 140rpx;
+    height: 140rpx;
+  }
+
+  .avatar-overlay {
+    width: 140rpx;
+    height: 140rpx;
+  }
+
+  .user-name {
+    font-size: 28rpx;
+  }
+
+  .setting-item {
+    padding: 24rpx 20rpx;
+  }
+
+  .setting-icon {
+    font-size: 28rpx;
+    margin-right: 16rpx;
+  }
+
+  .setting-text {
+    font-size: 26rpx;
+  }
+
+  .current-avatar {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 60rpx;
+  }
+
+  .current-avatar-name {
+    font-size: 26rpx;
+    margin-top: 12rpx;
+  }
+
+  .avatar-choice {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 40rpx;
+  }
+
+  .setting-value {
+    font-size: 26rpx;
+  }
+
+  .name-input-inline {
+    width: 120rpx;
+    font-size: 26rpx;
+    padding: 2rpx 6rpx;
+  }
+}
+
+

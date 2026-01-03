@@ -1,0 +1,1383 @@
+/* pages/hoofprint/hoofprint.wxss */
+
+/* CSS变量定义 */
+:root {
+  --primary-color: #333333;
+  --secondary-color: #666666;
+  --accent-color: #FF6B6B;
+  --film-bg: #1a1a1a;
+  --film-border: #333333;
+  --timeline-line: #FF6B6B;
+  --date-bg: rgba(255, 255, 255, 0.9);
+}
+
+/* 背景容器 */
+.background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: -1;
+  opacity: 0.3;
+}
+
+.background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 顶部轮播区域 */
+.top-carousel {
+  position: relative;
+  height: 410rpx;
+  width: calc(100% - 120rpx);
+  margin: 45rpx 60rpx 20rpx 60rpx;
+  border-radius: 12rpx;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* 轮播左上角斜线徽章 */
+.carousel-badge {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  padding: 10rpx 18rpx;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 14rpx;
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #333333;
+  letter-spacing: 1rpx;
+  backdrop-filter: blur(6rpx);
+  pointer-events: none;
+}
+
+/* 移除徽章的边角装饰 */
+
+.carousel-swiper {
+  height: 100%;
+  width: 100%;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.carousel-card {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: 12rpx;
+  overflow: hidden;
+  margin: 0 20rpx;
+}
+
+.card-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 40rpx 30rpx 20rpx;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.card-desc {
+  font-size: 28rpx;
+  opacity: 0.9;
+  display: block;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.5);
+}
+
+/* 筛选控件 */
+.filter-container {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin: 30rpx 20rpx 30rpx 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10rpx);
+  z-index: 2;
+  position: relative;
+}
+
+.difficulty-container {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin: 10rpx 20rpx 20rpx 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10rpx);
+  z-index: 2;
+  position: relative;
+  width: 100%;
+}
+
+/* 筛选项目 */
+.filter-item {
+  transform: translateX(5rpx);
+}
+
+/* 日期控件容器 */
+.date-controls {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+/* 全部日期按钮 */
+.all-date-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 8rpx;
+  padding: 8rpx 14rpx;
+  min-height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10rpx);
+  transform: translateX(-10rpx);
+}
+
+.all-date-btn:active {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.98);
+}
+
+.btn-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5rpx;
+}
+
+
+.filter-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 60rpx; /* 日期和类型组之间的间距 */
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx; /* 标签、竖线、选择器之间的间距 */
+}
+
+.filter-label {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  font-family: 'Courier New', monospace;
+}
+
+.filter-separator {
+  width: 6rpx;
+  height: 32rpx;
+  background-color: #888888;
+  border-radius: 3rpx;
+  box-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.1);
+}
+
+.filter-options {
+  display: flex;
+  gap: 15rpx;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background: rgba(255, 255, 255, 0.8);
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+  border-radius: 20rpx;
+  padding: 12rpx 20rpx;
+  font-size: 24rpx;
+  color: var(--primary-color);
+  font-family: 'Courier New', monospace;
+  transition: all 0.3s ease;
+  min-width: 100rpx;
+  text-align: center;
+}
+
+.filter-btn.active {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+  box-shadow: 0 2rpx 8rpx rgba(255, 107, 107, 0.3);
+  transform: translateY(-1rpx);
+}
+
+/* 日期选择器样式 */
+.date-picker {
+  width: 200rpx;
+}
+
+.picker-display {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  border-radius: 8rpx;
+  padding: 12rpx 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  min-height: 48rpx;
+  width: 160rpx; /* 再增加宽度10rpx */
+  backdrop-filter: blur(10rpx);
+  cursor: pointer;
+}
+
+.picker-display:active {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(0.98);
+}
+
+.picker-text {
+  font-size: 22rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0rpx rgba(0, 0, 0, 0.8);
+  letter-spacing: 1rpx;
+}
+
+/* 下拉选择器样式 */
+.dropdown-container {
+  position: relative;
+  width: 195rpx; /* 缩短5rpx */
+}
+
+.dropdown-trigger {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  border-radius: 8rpx;
+  padding: 12rpx 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  min-height: 48rpx;
+  cursor: pointer;
+  backdrop-filter: blur(10rpx);
+}
+
+.dropdown-trigger:active {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(0.98);
+}
+
+.dropdown-text {
+  font-size: 22rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0rpx rgba(0, 0, 0, 0.8);
+  letter-spacing: 1rpx;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 8rpx;
+  margin-top: 8rpx;
+  max-height: 300rpx;
+  overflow-y: auto;
+  z-index: 10;
+  backdrop-filter: blur(15rpx);
+  box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.5);
+}
+
+.dropdown-item {
+  padding: 14rpx 16rpx;
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: 'Courier New', monospace;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-shadow: 1rpx 1rpx 0rpx rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5rpx;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item.active {
+  background: rgba(255, 107, 107, 0.6);
+  color: white;
+}
+
+/* 时间线容器 */
+.timeline-container {
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+  padding: 20rpx 40rpx 120rpx;
+  margin-top: 10rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* 时间线主轴 */
+.timeline-axis {
+  position: absolute;
+  left: 50%;
+  top: 160rpx;
+  bottom: 120rpx;
+  width: 4rpx;
+  background: linear-gradient(to bottom, var(--timeline-line), transparent);
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+/* 时间线节点容器 */
+.timeline-nodes {
+  position: relative;
+  max-width: 600rpx;
+  width: 100%;
+}
+
+/* 时间线节点 */
+  .timeline-node {
+    position: relative;
+    margin-bottom: 60rpx;
+  }
+
+  /* 移动端轮播样式 */
+  .top-carousel {
+    height: 310rpx;
+    width: calc(100% - 110rpx);
+    margin: 50rpx 55rpx 15rpx 55rpx;
+    border-radius: 10rpx;
+    overflow: hidden;
+  }
+
+  .card-title {
+    font-size: 28rpx;
+  }
+
+  .carousel-badge {
+    top: 10rpx;
+    left: 10rpx;
+    font-size: 18rpx;
+    border-radius: 12rpx;
+    padding: 8rpx 14rpx;
+  }
+
+  .carousel-swiper {
+    border-radius: 10rpx;
+    overflow: hidden;
+  }
+
+  .card-desc {
+    font-size: 24rpx;
+  }
+
+  .filter-container {
+    padding: 20rpx;
+    margin: 30rpx 15rpx 20rpx 15rpx;
+  }
+
+  .filter-row {
+    flex-direction: row;
+    gap: 30rpx;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .filter-section {
+    align-items: center;
+    flex: 1;
+    max-width: 200rpx;
+  }
+
+  .filter-label {
+    font-size: 24rpx;
+  }
+
+  .filter-separator {
+    height: 28rpx;
+  }
+
+  .date-controls {
+    gap: 8rpx;
+  }
+
+  .picker-display {
+    width: 160rpx; /* 再增加宽度10rpx */
+    padding: 8rpx 12rpx;
+    min-height: 40rpx;
+  }
+
+  .picker-text {
+    font-size: 18rpx;
+  }
+
+  .all-date-btn {
+    padding: 8rpx 12rpx;
+    min-height: 36rpx;
+    transform: translateX(-10rpx);
+  }
+
+  .btn-text {
+    font-size: 20rpx;
+  }
+
+  .dropdown-trigger {
+    width: 155rpx; /* 缩短5rpx */
+    padding: 8rpx 12rpx;
+    min-height: 40rpx;
+  }
+
+  .dropdown-text {
+    font-size: 18rpx;
+  }
+
+  .dropdown-icon {
+    font-size: 18rpx;
+  }
+
+  .dropdown-list {
+    max-height: 220rpx;
+  }
+
+  .dropdown-item {
+    padding: 12rpx 16rpx;
+    font-size: 20rpx;
+  }
+
+
+/* 日期装饰图片 */
+.date-decoration {
+  width: 50rpx;
+  height: 50rpx;
+  flex-shrink: 0;
+}
+
+/* 节点日期 */
+.node-date {
+  position: relative;
+  background: var(--date-bg);
+  padding: 8rpx 12rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 3rpx 12rpx rgba(0, 0, 0, 0.1);
+  text-align: left;
+  margin-bottom: -40rpx; /* 负边距让底部20%覆盖卡片 */
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8rpx;
+  width: fit-content;
+  margin-left: -40rpx; /* 向左平移100rpx，与卡片左侧对齐 */
+  pointer-events: none;
+}
+
+.date-text {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: var(--primary-color);
+  font-family: 'Courier New', monospace;
+  line-height: 1.2;
+}
+
+.day-text {
+  display: block;
+  font-size: 24rpx;
+  color: var(--secondary-color);
+  font-family: 'Courier New', monospace;
+  margin-top: 4rpx;
+}
+
+/* 节点卡片包装器 */
+.node-cards-wrapper {
+  position: relative;
+  margin-left: 75rpx; /* 为小羊装饰留出空间 */
+  display: flex;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+/* 主要电影胶片卡片 */
+.film-card.main-card {
+  border-radius: 8rpx;
+  position: relative;
+  width: 400rpx;
+  height: 218rpx;
+  transform: translate(32rpx, 0rpx) !important; /* 向右32rpx，向下10rpx */
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+/* 小电影胶片卡片 */
+.film-card.small-card {
+  border-radius: 8rpx;
+  position: relative;
+  width: 250rpx; /* 260rpx - 10rpx = 250rpx */
+  height: 165rpx; /* 180rpx - 15rpx = 165rpx */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -74rpx; /* 向左平移74rpx (73rpx + 1rpx) */
+  margin-top: 55rpx; /* 向下平移55rpx (30rpx + 25rpx) */
+  z-index: 2;
+}
+
+.film-card:hover {
+  transform: translateY(-4rpx);
+}
+
+/* 电影胶片纹理 */
+.film-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(90deg, transparent 0%, transparent 45%, rgba(255,255,255,0.1) 45%, rgba(255,255,255,0.1) 55%, transparent 55%, transparent 100%),
+    linear-gradient(0deg, transparent 0%, transparent 40%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.05) 60%, transparent 60%, transparent 100%);
+  background-size: 40rpx 40rpx;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* 胶片孔 */
+/* 卡片封面 */
+.card-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 8rpx;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 收藏按钮 */
+.favorite-btn {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 24rpx;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.favorite-btn:active {
+  transform: scale(0.9);
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.favorite-icon {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+}
+
+.favorite-icon.favorited {
+  color: #ff4757;
+  transform: scale(1.1);
+}
+
+/* 卡片底部条形 */
+.card-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5rpx);
+  padding: 8rpx 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-bar-text {
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 春暖花开条形的特殊样式 */
+.relax-cover .card-bar {
+  padding: 2rpx 0 10rpx 0 !important;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 主要卡片内容 */
+
+/* 小卡片内容 */
+
+.card-category {
+  background: var(--accent-color);
+  color: white;
+  padding: 4rpx 12rpx;
+  border-radius: 15rpx;
+  font-size: 20rpx;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1rpx;
+  margin-bottom: 15rpx;
+  align-self: flex-start;
+}
+
+
+/* 小卡片标题 */
+.film-card.small-card .card-title {
+  display: block;
+  font-size: 24rpx;
+  font-weight: bold;
+  color: white;
+  font-family: 'PingFang SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
+  line-height: 1.4;
+  margin: 0;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.7);
+  word-break: break-word;
+  text-align: center;
+}
+
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .timeline-container {
+    padding: 40rpx 20rpx 120rpx;
+    margin-top: 10rpx;
+  }
+
+  .node-cards-wrapper {
+    margin-top: 20rpx;
+  }
+
+  .node-cards {
+    gap: 15rpx;
+    flex-direction: column;
+  }
+
+  .film-card {
+    width: 100%;
+    height: 140rpx;
+    padding: 30rpx 20rpx 30rpx 50rpx;
+    margin-bottom: 15rpx;
+  }
+
+  .film-holes {
+    gap: 20rpx;
+  }
+
+  .hole {
+    width: 6rpx;
+    height: 6rpx;
+  }
+
+  .card-title {
+    font-size: 20rpx;
+  }
+
+  .card-category {
+    font-size: 18rpx;
+    padding: 3rpx 10rpx;
+  }
+
+  .node-date {
+    padding: 8rpx 12rpx;
+    margin-bottom: 20rpx;
+  }
+
+  .date-decoration {
+    width: 42rpx;
+    height: 42rpx;
+  }
+
+  .date-text {
+    font-size: 24rpx;
+  }
+}
+
+/* 动画效果 */
+.timeline-node {
+  animation: slideInUp 0.8s ease-out;
+  animation-fill-mode: both;
+}
+
+.timeline-node:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.timeline-node:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.timeline-node:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+.film-card {
+  animation: slideInFilm 0.8s ease-out;
+  animation-fill-mode: both;
+}
+
+.node-cards .film-card:nth-child(1) {
+  animation-delay: 0.8s;
+}
+
+.node-cards .film-card:nth-child(2) {
+  animation-delay: 1.0s;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInFilm {
+  from {
+    opacity: 0;
+    transform: translateX(-30rpx) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* 当前日期区域 */
+.current-date-section {
+  margin-bottom: 40rpx;
+}
+
+.date-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30rpx 40rpx;
+  border-radius: 16rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 15rpx rgba(102, 126, 234, 0.3);
+}
+
+.current-date {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: white;
+  font-family: 'PingFang SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+  display: block;
+  text-align: center;
+}
+
+/* 今日文章 */
+.today-articles {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.article-item {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.article-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.category-tags {
+  display: flex;
+  gap: 12rpx;
+}
+
+.category-tag {
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: white;
+  font-family: 'PingFang SC', sans-serif;
+}
+
+.category-life {
+  background: var(--tag-life-bg);
+}
+
+.category-growth {
+  background: var(--tag-growth-bg);
+}
+
+.article-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.article-title-cn {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--primary-color);
+  font-family: 'PingFang SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
+  line-height: 1.4;
+}
+
+.article-title-en {
+  font-size: 24rpx;
+  color: var(--secondary-color);
+  font-family: 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+/* 分隔线 */
+.section-divider {
+  height: 2rpx;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: 40rpx 0;
+  position: relative;
+}
+
+.section-divider::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 80rpx;
+  height: 4rpx;
+  background: var(--accent-color);
+  border-radius: 2rpx;
+}
+
+/* 昨日区域 */
+.yesterday-section {
+  margin-top: 40rpx;
+}
+
+.date-header.yesterday {
+  background: var(--background-light);
+  border-left: 6rpx solid var(--accent-color);
+  padding: 20rpx 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.date-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--secondary-color);
+  font-family: 'PingFang SC', sans-serif;
+}
+
+/* 文章网格 */
+.articles-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.article-row {
+  display: flex;
+  background: white;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.article-cell {
+  padding: 24rpx;
+  display: flex;
+  align-items: center;
+  min-height: 80rpx;
+}
+
+.article-cell:first-child {
+  width: 120rpx;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-right: 1rpx solid var(--border-color);
+}
+
+.content-cell {
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8rpx;
+  padding: 24rpx 30rpx;
+}
+
+.content-cell .article-title-cn {
+  font-size: 28rpx;
+  line-height: 1.4;
+}
+
+.content-cell .article-title-en {
+  font-size: 22rpx;
+  line-height: 1.3;
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .timeline-container {
+    margin: 10rpx;
+    padding: 30rpx 20rpx;
+  }
+
+  .current-date {
+    font-size: 32rpx;
+  }
+
+  .article-title-cn {
+    font-size: 28rpx;
+  }
+
+  .article-title-en {
+    font-size: 22rpx;
+  }
+
+  .date-text {
+    font-size: 26rpx;
+  }
+
+  .content-cell .article-title-cn {
+    font-size: 26rpx;
+  }
+
+  .content-cell .article-title-en {
+    font-size: 20rpx;
+  }
+}
+
+/* 动画效果 */
+.timeline-container {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.current-date-section,
+.yesterday-section {
+  animation: fadeInUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.current-date-section {
+  animation-delay: 0.1s;
+}
+
+.yesterday-section {
+  animation-delay: 0.3s;
+}
+
+.article-row {
+  animation: slideInRight 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.article-row:nth-child(1) {
+  animation-delay: 0.4s;
+}
+
+.article-row:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 页面标题 */
+.page-header {
+  text-align: center;
+  margin-bottom: 60rpx;
+  margin-top: 20rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  font-family: 'Courier New', monospace;
+  text-shadow: 2rpx 2rpx 0px #ecf0f1;
+  margin-bottom: 12rpx;
+}
+
+.page-subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #7f8c8d;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px #ecf0f1;
+}
+
+/* 明信片容器 */
+.postcards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40rpx;
+}
+
+/* 明信片项目 */
+.postcard-item {
+  position: relative;
+  width: 100%;
+  height: 400rpx;
+  perspective: 1200rpx;
+  cursor: pointer;
+}
+
+.postcard-front,
+.postcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 明信片正面（封面） */
+.postcard-front {
+  background: #fff;
+  transform: rotateY(0deg);
+}
+
+/* 明信片背面（内容） */
+.postcard-back {
+  transform: rotateY(180deg);
+}
+
+/* 翻转动画 */
+.postcard-item.flipped .postcard-front {
+  transform: rotateY(-180deg);
+}
+
+.postcard-item.flipped .postcard-back {
+  transform: rotateY(0deg);
+}
+
+/* 封面图片 */
+.postcard-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 封面覆盖层 */
+.postcard-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  padding: 40rpx 30rpx 30rpx;
+  color: white;
+}
+
+.postcard-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  text-shadow: 2rpx 2rpx 0px rgba(0, 0, 0, 0.5);
+  margin-bottom: 12rpx;
+  line-height: 1.3;
+}
+
+.postcard-date {
+  display: block;
+  font-size: 24rpx;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px rgba(0, 0, 0, 0.5);
+  opacity: 0.9;
+}
+
+/* 内容文字容器 */
+.postcard-content-text {
+  width: 100%;
+  height: 100%;
+  padding: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.content-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px rgba(0, 0, 0, 0.3);
+  line-height: 1.6;
+  white-space: pre-line;
+  text-align: center;
+  image-rendering: pixelated;
+  text-rendering: optimizeSpeed;
+}
+
+/* 明信片悬停效果 */
+.postcard-item:hover .postcard-front,
+.postcard-item:hover .postcard-back {
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.postcard-item.flipped:hover .postcard-front {
+  transform: rotateY(-180deg) scale(1.02);
+}
+
+.postcard-item.flipped:hover .postcard-back {
+  transform: rotateY(0deg) scale(1.02);
+}
+
+/* 底部装饰 */
+.bottom-decoration {
+  text-align: center;
+  margin-top: 80rpx;
+  padding: 40rpx 0;
+}
+
+.decoration-text {
+  font-size: 24rpx;
+  color: #95a5a6;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px #ecf0f1;
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .hoofprint-container {
+    padding: 30rpx 20rpx;
+  }
+
+  .postcard-item {
+    height: 350rpx;
+  }
+
+  .page-title {
+    font-size: 42rpx;
+  }
+
+  .page-subtitle {
+    font-size: 24rpx;
+  }
+}
+
+/* 像素风格增强 */
+.page-title,
+.page-subtitle,
+.postcard-title,
+.postcard-date,
+.decoration-text {
+  image-rendering: pixelated;
+  text-rendering: optimizeSpeed;
+}
+
+/* 动画增强 */
+.postcard-front,
+.postcard-back {
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              box-shadow 0.3s ease;
+}
+
+/* 点击反馈 */
+.postcard-item:active .postcard-front,
+.postcard-item:active .postcard-back {
+  transform: scale(0.98);
+}
+
+.postcard-item.flipped:active .postcard-front {
+  transform: rotateY(-180deg) scale(0.98);
+}
+
+/* 电影胶片布局响应式设计 */
+@media (max-width: 750rpx) {
+  .node-cards-wrapper {
+    margin-left: 50rpx;
+    flex-direction: column;
+    gap: 15rpx;
+  }
+
+  .film-card.main-card {
+    width: 100%;
+    height: 243rpx;
+    padding: 40rpx 20rpx 30rpx 50rpx;
+    transform: translate(52rpx, 0rpx) !important; /* 向右52rpx，向下10rpx - 移动端 */
+  }
+
+  .film-card.small-card {
+    width: 100%;
+    height: 105rpx; /* 120rpx - 15rpx = 105rpx */
+    padding: 18rpx 15rpx 18rpx 40rpx;
+    margin-left: 0; /* 移动端重置左移，避免超出屏幕 */
+  }
+
+  /* 移动端条形样式 */
+  .card-bar {
+    padding: 6rpx 0;
+  }
+
+  .card-bar-text {
+    font-size: 18rpx;
+  }
+
+  /* 移动端春暖花开条形的特殊样式 */
+  .relax-cover .card-bar {
+    padding: 2rpx 0 10rpx 0 !important;
+  }
+
+
+  .node-date {
+    padding: 8rpx 12rpx;
+    margin-left: 50rpx;
+    margin-bottom: -25rpx;
+  }
+
+  .date-text {
+    font-size: 24rpx;
+  }
+
+  .date-decoration {
+    width: 42rpx;
+    height: 42rpx;
+  }
+
+  /* 筛选控件移动端样式 */
+  .filter-row {
+    gap: 40rpx; /* 移动端缩小间距 */
+  }
+
+  .filter-item {
+    gap: 10rpx; /* 移动端缩小间距 */
+    transform: translateX(5rpx);
+  }
+
+  .filter-label {
+    font-size: 24rpx;
+  }
+
+  .filter-separator {
+    height: 28rpx;
+  }
+}
+
+.postcard-item.flipped:active .postcard-back {
+  transform: rotateY(0deg) scale(0.98);
+}
+.difficulty-segment {
+  display: flex;
+  gap: 32rpx;
+  align-items: center;
+}
+
+.segment-btn {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  border-radius: 8rpx;
+  padding: 8rpx 24rpx;
+  min-height: 36rpx;
+  min-width: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0rpx rgba(0, 0, 0, 0.8);
+}
+
+.segment-btn.active {
+  background: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 750rpx) {
+  .segment-btn {
+    min-width: 130rpx;
+    padding: 6rpx 20rpx;
+    min-height: 32rpx;
+  }
+}

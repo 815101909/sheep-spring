@@ -1,0 +1,77 @@
+/* app.wxss */
+/* 全局样式 - 浅治愈蓝色调 */
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 100rpx 40rpx 60rpx;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 50%, #f5faff 100%);
+  position: relative;
+}
+
+/* 柔和卡片样式 */
+.healing-card {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 20rpx;
+  border: 2rpx solid rgba(176, 224, 230, 0.5);
+  box-shadow: 0 4rpx 20rpx rgba(135, 206, 235, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 治愈色按钮 */
+.healing-button {
+  background: linear-gradient(135deg, #87ceeb, #b0e0e6);
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(135, 206, 235, 0.3);
+  transition: all 0.3s ease;
+  box-shadow: 0 2rpx 8rpx rgba(135, 206, 235, 0.3);
+}
+
+.healing-button:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 1rpx 4rpx rgba(135, 206, 235, 0.4);
+}
+
+/* CSS Heart Icon */
+.css-heart {
+  position: relative;
+  width: 20rpx;
+  height: 20rpx;
+  background-color: #999;
+  transform: rotate(45deg) scale(0.8);
+  display: inline-block;
+}
+
+.css-heart::before,
+.css-heart::after {
+  content: '';
+  position: absolute;
+  width: 20rpx;
+  height: 20rpx;
+  background-color: #999;
+  border-radius: 50%;
+}
+
+.css-heart::before {
+  top: -10rpx;
+  left: 0;
+}
+
+.css-heart::after {
+  top: 0;
+  left: -10rpx;
+}
+
+.css-heart.filled {
+  background-color: #ff4444;
+}
+
+.css-heart.filled::before,
+.css-heart.filled::after {
+  background-color: #ff4444;
+}
+

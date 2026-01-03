@@ -1,0 +1,111 @@
+<view class="checkin-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+
+  <!-- 页面内容 -->
+  <view class="checkin-content">
+    <!-- 打卡数据统计 -->
+    <view class="stats-section">
+      <view class="stats-row">
+        <!-- 连续打卡天数（左） -->
+        <view class="stat-item left">
+          <text class="stat-number">{{checkinDays}}</text>
+          <text class="stat-label">连续打卡天数</text>
+        </view>
+        <!-- 累计打卡天数（中） -->
+        <view class="stat-item center">
+          <text class="stat-number">{{totalCheckins}}</text>
+          <text class="stat-label">累计打卡天数</text>
+        </view>
+        <!-- 解锁形象数量（右） -->
+        <view class="stat-item right">
+          <text class="stat-number">{{unlockedImages}}</text>
+          <text class="stat-label">解锁形象数量</text>
+        </view>
+      </view>
+    </view>
+
+  <!-- 日历区域 -->
+  <view class="calendar-section">
+    <view class="calendar-header">
+      <view class="month-nav">
+        <view class="nav-btn" bindtap="prevMonth">‹</view>
+        <text class="calendar-title">{{currentMonth}}月</text>
+        <view class="nav-btn" bindtap="nextMonth">›</view>
+      </view>
+      <view class="year-nav">
+        <view class="nav-btn" bindtap="prevYear">‹</view>
+        <text class="year-text">{{currentYear}}</text>
+        <view class="nav-btn" bindtap="nextYear">›</view>
+      </view>
+    </view>
+
+    <!-- 星期标题 -->
+    <view class="weekday-header">
+      <text class="weekday" wx:for="{{weekdays}}" wx:key="*this">{{item}}</text>
+    </view>
+
+    <!-- 日历网格 -->
+    <view class="calendar-grid">
+      <view class="calendar-day {{item.checkin ? 'checked' : ''}} {{item.today ? 'today' : ''}}"
+            wx:for="{{calendarDays}}"
+            wx:key="date"
+            bindtap="onDayTap"
+            data-date="{{item.date}}">
+        <text class="day-number">{{item.day}}</text>
+        <view class="checkin-dot" wx:if="{{item.checkin}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡成功提示 -->
+  <view class="checkin-success-section" wx:if="{{showCheckinSuccess}}">
+    <view class="success-modal">
+      <view class="success-content">
+        <text class="success-title">完成打卡</text>
+        <view class="blind-box" bindtap="openBlindBox">
+          <image class="blind-box-image" src="/assets/images/盲盒.png" mode="aspectFit" />
+        </view>
+        <text class="blind-box-hint">点击盲盒抽取趣味形象！</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 盲盒奖励提示 -->
+  <view class="reward-section" wx:if="{{showReward}}">
+    <view class="reward-modal">
+      <view class="reward-content">
+        <text class="reward-title" wx:if="{{hasNewAvatar}}">恭喜你获得新形象</text>
+        <text class="reward-title" wx:else>不要气馁，明日再来抽取有趣形象！</text>
+        <image wx:if="{{hasNewAvatar}}" class="reward-image" src="{{rewardImage}}" mode="aspectFit" />
+        <view wx:else class="no-reward-content">
+          <image class="no-reward-image" src="/assets/images/盲盒失败.png" mode="aspectFit" />
+        </view>
+        <view class="reward-btn" bindtap="closeReward">确定</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 我的形象展示区 -->
+  <view class="avatar-section">
+    <!-- 所有形象网格 -->
+    <view class="all-avatars">
+      <!-- 默认形象 -->
+      <view class="avatar-item" bindtap="selectDefaultAvatar">
+        <image class="avatar-image" src="/assets/images/小卡片默认形象.png" mode="aspectFit" />
+        <text class="avatar-label">默认形象</text>
+      </view>
+
+      <!-- 已解锁形象 -->
+      <view class="avatar-item"
+            wx:for="{{unlockedAvatarList}}"
+            wx:key="*this"
+            bindtap="selectAvatar"
+            data-index="{{index}}">
+        <image class="avatar-image" src="{{item}}" mode="aspectFit" />
+        <text class="avatar-label">已解锁形象</text>
+      </view>
+    </view>
+    </view>
+  </view>
+</view>

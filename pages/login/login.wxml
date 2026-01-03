@@ -1,0 +1,43 @@
+<view class="login-container">
+  <!-- 背景 -->
+  <view class="bg-container">
+    <image class="splash-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+  </view>
+
+  <!-- 登录内容 -->
+  <view class="login-content">
+    <!-- 登录按钮 -->
+    <view class="login-btn-container">
+      <button class="login-btn" bindtap="onLogin">登录</button>
+    </view>
+
+    <!-- 协议勾选 -->
+    <view class="agreement-container">
+      <checkbox-group bindchange="onAgreementChange">
+        <checkbox class="agreement-checkbox" value="agreement" checked="{{agreementChecked}}" />
+      </checkbox-group>
+      <view class="agreement-text-wrapper">
+        <text class="agreement-text">我已阅读并同意</text>
+        <text class="agreement-link" bindtap="onPrivacyTap">《隐私政策》</text>
+        <text class="agreement-text">和</text>
+        <text class="agreement-link" bindtap="onTermsTap">《用户协议》</text>
+  </view>
+</view>
+
+<view class="agreement-modal-mask" wx:if="{{showAgreementModal}}">
+  <view class="agreement-modal">
+    <view class="agreement-title">{{modalTitle}}</view>
+    <scroll-view class="agreement-scroll" scroll-y="true">
+      <text class="agreement-content">{{modalContent}}</text>
+    </scroll-view>
+    <view class="agreement-actions">
+      <button class="modal-btn close-btn" bindtap="closeAgreementModal">关闭</button>
+    </view>
+  </view>
+</view>
+    <!-- 底部文字 -->
+    <view class="slogan-container">
+      <text class="slogan-text">和小绵羊一起感受春日的温柔</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,10 @@
+{
+  "name": "spring_do_checkin",
+  "version": "1.0.0",
+  "description": "执行每日打卡并根据当天是否上传形象决定盲盒结果",
+  "main": "index.js",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

@@ -1,0 +1,229 @@
+<!--pages/music/music.wxml-->
+<view class="container">
+  <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill"></image>
+
+  <!-- MP3播放器主体 -->
+  <view class="mp3-player">
+    <!-- MP3外壳 -->
+    <view class="mp3-body">
+      <!-- 屏幕区域 -->
+      <view class="mp3-screen">
+        <view class="screen-content">
+          <!-- 媒体显示区域 -->
+          <view class="media-display">
+            <!-- 视频 -->
+            <video 
+              wx:if="{{currentSong.media_url}}" 
+              id="myVideo" 
+              src="{{currentSong.media_url}}" 
+              poster="{{currentSong.poster}}" 
+              controls="{{false}}" 
+              show-center-play-btn="{{false}}" 
+              object-fit="contain"
+              class="screen-media"
+              muted="{{!!currentSong.audio_url}}"
+              bindtimeupdate="onVideoTimeUpdate"
+              bindended="onVideoEnded">
+            </video>
+            <!-- 图片 -->
+            <image 
+              wx:else 
+              src="{{currentSong.image || '/assets/images/splash-bg.png'}}" 
+              mode="aspectFit" 
+              class="screen-media">
+            </image>
+          </view>
+
+          <!-- 歌曲信息 -->
+          <view class="song-info">
+            <text class="song-title" style="font-size: {{fontSize === 'small' ? '32rpx' : fontSize === 'large' ? '42rpx' : '37rpx'}}; color: {{fontColor === 'black' ? '#000000' : fontColor === 'white' ? '#ffffff' : fontColor === 'green' ? '#00ff00' : fontColor === 'blue' ? '#0088ff' : fontColor === 'red' ? '#ff0000' : '#ffd700'}}; font-family: 'Courier New', monospace; font-weight: {{fontSize === 'small' ? 'normal' : 'bold'}}; text-shadow: 2rpx 2rpx 0px {{fontColor === 'black' ? '#666666' : fontColor === 'white' ? '#cccccc' : fontColor === 'green' ? '#004400' : fontColor === 'blue' ? '#004466' : fontColor === 'red' ? '#440000' : '#665500'}}; image-rendering: pixelated; text-rendering: optimizeSpeed">{{currentSong.title || '初夏小夜曲'}}</text>
+            <text class="song-artist" style="font-size: {{fontSize === 'small' ? '20rpx' : fontSize === 'large' ? '28rpx' : '24rpx'}}; color: {{fontColor === 'black' ? '#000000' : fontColor === 'white' ? '#ffffff' : fontColor === 'green' ? '#00cc00' : fontColor === 'blue' ? '#0088ff' : fontColor === 'red' ? '#cc0000' : '#ffed4e'}}; font-family: 'Courier New', monospace; text-shadow: 1rpx 1rpx 0px {{fontColor === 'black' ? '#666666' : fontColor === 'white' ? '#cccccc' : fontColor === 'green' ? '#004400' : fontColor === 'blue' ? '#004466' : fontColor === 'red' ? '#440000' : '#665500'}}; image-rendering: pixelated; text-rendering: optimizeSpeed">{{currentSong.artist || '春日音乐家'}}</text>
+          </view>
+
+          <!-- 歌词显示区域 (字幕式单行显示) -->
+          <view class="lyrics-display subtitle-mode">
+            <view class="subtitle-text" style="font-size: {{fontSize === 'small' ? '24rpx' : fontSize === 'large' ? '32rpx' : '28rpx'}}; color: {{fontColor === 'black' ? '#000000' : fontColor === 'white' ? '#ffffff' : fontColor === 'green' ? '#00ff00' : fontColor === 'blue' ? '#0088ff' : fontColor === 'red' ? '#ff0000' : '#ffd700'}}; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 2rpx 2rpx 0px {{fontColor === 'black' ? '#666666' : fontColor === 'white' ? '#cccccc' : fontColor === 'green' ? '#004400' : fontColor === 'blue' ? '#004466' : fontColor === 'red' ? '#440000' : '#665500'}}; image-rendering: pixelated; text-rendering: optimizeSpeed">
+              {{lyrics[currentLyricsIndex].text}}
+            </view>
+          </view>
+
+          <!-- 进度条 -->
+          <view class="progress-bar">
+            <view class="progress-fill" style="width: {{progress}}%; background: {{fontColor === 'black' ? 'linear-gradient(90deg, #666666, #888888)' : fontColor === 'white' ? 'linear-gradient(90deg, #ffffff, #cccccc)' : fontColor === 'green' ? 'linear-gradient(90deg, #00ff88, #88ffaa)' : fontColor === 'blue' ? 'linear-gradient(90deg, #0088ff, #88ccff)' : fontColor === 'red' ? 'linear-gradient(90deg, #ff4444, #ff8888)' : 'linear-gradient(90deg, #ffd700, #ffed4e)'}}; box-shadow: 0 0 8rpx {{fontColor === 'black' ? 'rgba(102, 102, 102, 0.5)' : fontColor === 'white' ? 'rgba(255, 255, 255, 0.5)' : fontColor === 'green' ? 'rgba(0, 255, 136, 0.5)' : fontColor === 'blue' ? 'rgba(0, 136, 255, 0.5)' : fontColor === 'red' ? 'rgba(255, 68, 68, 0.5)' : 'rgba(255, 215, 0, 0.5)'}}"></view>
+          </view>
+
+          <!-- 时间显示 -->
+          <view class="time-display">
+            <text class="current-time" style="color: {{fontColor === 'black' ? '#000000' : fontColor === 'white' ? '#ffffff' : fontColor === 'green' ? '#00aa00' : fontColor === 'blue' ? '#0088ff' : fontColor === 'red' ? '#ff0000' : '#ffd700'}}">{{currentTime}}</text>
+            <text class="total-time" style="color: {{fontColor === 'black' ? '#000000' : fontColor === 'white' ? '#ffffff' : fontColor === 'green' ? '#00aa00' : fontColor === 'blue' ? '#0088ff' : fontColor === 'red' ? '#ff0000' : '#ffd700'}}">{{totalTime}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 功能栏 -->
+      <view class="function-bar">
+        <text class="function-text {{activePanel === 'speed' ? 'active' : ''}}" bindtap="togglePanel" data-panel="speed">倍速朗读</text>
+        <text class="function-text {{activePanel === 'fontSize' ? 'active' : ''}}" bindtap="togglePanel" data-panel="fontSize">字体大小</text>
+        <text class="function-text {{activePanel === 'fontColor' ? 'active' : ''}}" bindtap="togglePanel" data-panel="fontColor">字体颜色</text>
+      </view>
+
+      <!-- 点击遮罩关闭面板 -->
+      <view wx:if="{{activePanel}}" class="overlay" bindtap="closePanel"></view>
+
+      <!-- 展开面板 -->
+      <view wx:if="{{activePanel}}" class="expand-panel visible">
+        <!-- 倍速选项 -->
+        <view wx:if="{{activePanel === 'speed'}}" class="panel-content active">
+          <view class="panel-header">选择播放倍速</view>
+          <view class="option-grid">
+            <view class="option-btn {{playbackRate === 0.5 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="0.5">
+              <text class="option-text">0.5x</text>
+            </view>
+            <view class="option-btn {{playbackRate === 0.75 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="0.75">
+              <text class="option-text">0.75x</text>
+            </view>
+            <view class="option-btn {{playbackRate === 1.0 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.0">
+              <text class="option-text">1.0x</text>
+            </view>
+            <view class="option-btn {{playbackRate === 1.25 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.25">
+              <text class="option-text">1.25x</text>
+            </view>
+            <view class="option-btn {{playbackRate === 1.5 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.5">
+              <text class="option-text">1.5x</text>
+            </view>
+            <view class="option-btn {{playbackRate === 1.75 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.75">
+              <text class="option-text">1.75x</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 字体大小选项 -->
+        <view wx:if="{{activePanel === 'fontSize'}}" class="panel-content active">
+          <view class="panel-header">选择字体大小</view>
+          <view class="size-options">
+            <view class="size-option {{fontSize === 'small' ? 'selected' : ''}}" bindtap="setFontSize" data-size="small">
+              <text class="size-text">小</text>
+            </view>
+            <view class="size-option {{fontSize === 'medium' ? 'selected' : ''}}" bindtap="setFontSize" data-size="medium">
+              <text class="size-text">中</text>
+            </view>
+            <view class="size-option {{fontSize === 'large' ? 'selected' : ''}}" bindtap="setFontSize" data-size="large">
+              <text class="size-text">大</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 字体颜色选项 -->
+        <view wx:if="{{activePanel === 'fontColor'}}" class="panel-content active">
+          <view class="panel-header">选择字体颜色</view>
+          <view class="color-options">
+            <view class="color-option {{fontColor === 'black' ? 'selected' : ''}}" bindtap="setFontColor" data-color="black">
+              <view class="color-swatch black"></view>
+              <text class="color-label">黑色</text>
+            </view>
+            <view class="color-option {{fontColor === 'white' ? 'selected' : ''}}" bindtap="setFontColor" data-color="white">
+              <view class="color-swatch white"></view>
+              <text class="color-label">白色</text>
+            </view>
+            <view class="color-option {{fontColor === 'green' ? 'selected' : ''}}" bindtap="setFontColor" data-color="green">
+              <view class="color-swatch green"></view>
+              <text class="color-label">绿色</text>
+            </view>
+            <view class="color-option {{fontColor === 'blue' ? 'selected' : ''}}" bindtap="setFontColor" data-color="blue">
+              <view class="color-swatch blue"></view>
+              <text class="color-label">蓝色</text>
+            </view>
+            <view class="color-option {{fontColor === 'red' ? 'selected' : ''}}" bindtap="setFontColor" data-color="red">
+              <view class="color-swatch red"></view>
+              <text class="color-label">红色</text>
+            </view>
+            <view class="color-option {{fontColor === 'goose' ? 'selected' : ''}}" bindtap="setFontColor" data-color="goose">
+              <view class="color-swatch goose"></view>
+              <text class="color-label">鹅黄色</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 控制按钮区域 -->
+      <view class="mp3-controls">
+        <!-- 播放控制面板（居中） -->
+        <view class="control-panel">
+          <!-- 第一行：装饰和下载按钮 -->
+          <view class="control-row">
+            <view class="control-btn decoration-btn">
+              <image class="decoration-icon" src="/assets/images/装饰.png" mode="aspectFit"></image>
+            </view>
+            <view class="control-btn download-btn" bindtap="downloadSong">
+              <image class="control-icon-img" src="/assets/images/下载.png" mode="aspectFit"></image>
+            </view>
+          </view>
+
+          <!-- 第二行：四个按钮 -->
+          <view class="control-row">
+            <view class="control-btn prev-btn" bindtap="prevSong">
+              <image class="control-icon-img" src="/assets/images/倒带.png" mode="aspectFit"></image>
+            </view>
+            <view class="control-btn play-btn main-btn" bindtap="togglePlay">
+              <image class="control-icon-img" src="{{isPlaying ? '/assets/images/stop.png' : '/assets/images/play.png'}}" mode="aspectFit"></image>
+            </view>
+            <view class="control-btn mode-btn main-btn" bindtap="cyclePlayMode">
+              <image class="control-icon-img" src="{{playMode === 'list' ? '/assets/images/列表循环.png' : playMode === 'single' ? '/assets/images/单曲循环.png' : '/assets/images/随机播放.png'}}" mode="aspectFit"></image>
+            </view>
+            <view class="control-btn next-btn" bindtap="nextSong">
+              <image class="control-icon-img" src="/assets/images/快进.png" mode="aspectFit"></image>
+            </view>
+          </view>
+
+          <!-- 第三行：收藏按钮和播放列表按钮 -->
+          <view class="control-row">
+            <view class="control-btn favorite-btn" bindtap="toggleFavorite">
+              <image class="control-icon-img" src="{{isFavorite ? '/assets/images/点击喜欢后.png' : '/assets/images/喜欢按钮原始状态.png'}}" mode="aspectFit"></image>
+            </view>
+            <view class="control-btn playlist-btn" bindtap="togglePlaylist">
+              <image class="control-icon-img" src="/assets/images/播放列表.png" mode="aspectFit"></image>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- MP3品牌标识 -->
+      <view class="mp3-brand">
+        <text class="brand-text">春日随身听</text>
+        <text class="brand-subtitle">Spring MP3 Player</text>
+      </view>
+    </view>
+    </view>
+
+  <!-- 歌曲列表 -->
+  <view class="playlist-panel {{showPlaylist ? 'visible' : ''}}">
+    <view class="playlist-header">
+      <view class="header-top">
+        <text class="playlist-title">播放列表</text>
+        <view class="close-playlist" bindtap="togglePlaylist">✕</view>
+      </view>
+      <!-- 搜索和筛选栏 -->
+      <view class="search-bar">
+        <input class="search-input" placeholder="搜索歌曲..." placeholder-class="search-placeholder" bindinput="onSearchInput" value="{{searchQuery}}" />
+        <view class="filter-btn {{filterFavorite ? 'active' : ''}}" bindtap="toggleFilterFavorite">
+           <view class="css-heart {{filterFavorite ? 'filled' : ''}}"></view>
+        </view>
+      </view>
+    </view>
+    <scroll-view class="playlist-scroll" scroll-y="true">
+      <view class="song-item {{item.originalIndex === currentSongIndex ? 'playing' : ''}}"
+            wx:for="{{displayPlaylist}}"
+            wx:key="originalIndex"
+            bindtap="selectSong"
+            data-index="{{item.originalIndex}}">
+        <view class="song-number">{{index + 1}}</view>
+        <view class="song-details">
+          <text class="item-title">{{item.title}}</text>
+          <text class="item-artist">{{item.artist}}</text>
+        </view>
+        <view class="song-duration">{{item.duration}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+</view>

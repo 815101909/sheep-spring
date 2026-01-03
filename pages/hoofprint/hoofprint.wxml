@@ -1,0 +1,108 @@
+<!-- pages/hoofprint/hoofprint.wxml -->
+<!-- 背景层 -->
+<view class="background-container">
+  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
+</view>
+
+<!-- 顶部轮播区域 -->
+<view class="top-carousel">
+  <view class="carousel-badge">试读精选</view>
+  <swiper class="carousel-swiper" indicator-dots="{{true}}" autoplay="{{true}}" circular="{{true}}" interval="5000">
+    <swiper-item wx:for="{{carouselItems}}" wx:key="id">
+      <view class="carousel-card" bindtap="openCarouselArticle" data-article="{{item}}">
+        <image class="card-bg" src="{{item.cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
+        <view class="card-overlay">
+          <text class="card-title">{{item.title}}</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<!-- 筛选控件 -->
+<view class="filter-container">
+  <view class="filter-row">
+    <!-- 日期部分 -->
+    <view class="filter-item">
+      <text class="filter-label">日期</text>
+      <view class="filter-separator"></view>
+      <view class="date-controls">
+        <picker mode="date" value="{{selectedDate}}" bindchange="bindDateChange" class="date-picker">
+          <view class="picker-display" bindtap="showDatePicker">
+            <text class="picker-text">{{selectedDateText || '选择日期'}}</text>
+          </view>
+        </picker>
+        <view class="all-date-btn" bindtap="selectAllDates">
+          <text class="btn-text">全部</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 类型部分 -->
+    <view class="filter-item">
+      <text class="filter-label">类型</text>
+      <view class="filter-separator"></view>
+      <view class="dropdown-container">
+        <view class="dropdown-trigger" bindtap="toggleTypeDropdown">
+          <text class="dropdown-text">{{selectedTypeText || '选择类型'}}</text>
+        </view>
+        <view class="dropdown-list" wx:if="{{showTypeDropdown}}">
+          <view wx:for="{{typeOptions}}" wx:key="*this" class="dropdown-item {{item === selectedType ? 'active' : ''}}" bindtap="selectType" data-type="{{item}}">
+            {{item}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 时间线容器 -->
+<view class="timeline-container">
+  <view class="difficulty-container">
+    <view class="filter-row">
+      <view class="filter-item">
+        <text class="filter-label">难度</text>
+        <view class="filter-separator"></view>
+        <view class="difficulty-segment">
+          <view class="segment-btn {{selectedDifficulty === '全部' ? 'active' : ''}}" bindtap="selectDifficulty" data-difficulty="全部">全部</view>
+          <view class="segment-btn {{selectedDifficulty === '低难度' ? 'active' : ''}}" bindtap="selectDifficulty" data-difficulty="低难度">低难度</view>
+          <view class="segment-btn {{selectedDifficulty === '高难度' ? 'active' : ''}}" bindtap="selectDifficulty" data-difficulty="高难度">高难度</view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- 时间线主轴 -->
+  <view class="timeline-axis"></view>
+
+  <!-- 时间线节点 -->
+  <view class="timeline-nodes">
+    <view class="timeline-node" wx:for="{{filteredTimelineData}}" wx:key="date">
+      <view class="node-date">
+        <image class="date-decoration" src="/assets/images/日期前小羊.png" mode="aspectFit" />
+        <text class="date-text">{{item.date}}</text>
+      </view>
+
+      <view class="node-cards-wrapper">
+        <view class="film-card small-card" wx:if="{{item.articles.length > 0}}" bindtap="openArticleDetail" data-article="{{item.articles[0]}}" data-date="{{item.date}}" data-card-type="small" data-card-index="1">
+          <view class="film-texture"></view>
+          <view class="card-cover">
+          <image class="cover-image" src="{{item.articles[0].cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
+            <view class="card-bar">
+              <text class="card-bar-text">{{item.articles[0].subtitle || item.articles[0].titleCn}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="film-card main-card" wx:if="{{item.articles.length > 0}}" bindtap="openArticleDetail" data-article="{{item.articles[0]}}" data-date="{{item.date}}" data-card-type="main" data-card-index="0">
+          <view class="film-texture"></view>
+          <view class="card-cover">
+          <image class="cover-image" src="{{item.articles[0].cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
+            <view class="card-bar">
+              <text class="card-bar-text">{{item.articles[0].titleCn}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

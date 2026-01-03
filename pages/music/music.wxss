@@ -1,0 +1,827 @@
+/* pages/music/music.wxss */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 50%, #f5faff 100%);
+  position: relative;
+  padding: 40rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+/* ===== MP3播放器主体 ===== */
+.mp3-player {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 600rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60rpx;
+    transform: translateY(-50rpx); /* 整体向上平移 */
+}
+
+/* MP3播放器外壳 */
+.mp3-body {
+  width: 100%;
+  height: 950rpx; /* 增加50rpx后的高度 */
+  background: rgba(255, 255, 255, 0.15); /* 半透明背景 */
+  border-radius: 30rpx;
+  box-shadow:
+    0 20rpx 40rpx rgba(0, 0, 0, 0.2),
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.8),
+    inset 0 -2rpx 4rpx rgba(0, 0, 0, 0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.3); /* 半透明边框 */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 40rpx 30rpx;
+}
+
+/* MP3屏幕 */
+.mp3-screen {
+  background: linear-gradient(145deg, #001122, #003344);
+  border-radius: 20rpx;
+  height: 390rpx; /* 缩小10rpx后的高度 */
+  margin-top: 30rpx; /* 向上平移5rpx */
+  margin-bottom: 20rpx; /* 减少间距，为功能栏让位 */
+  border: 3rpx solid #004466;
+  box-shadow: inset 0 4rpx 8rpx rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen-content {
+  width: 90%;
+  height: 90%;
+  background: #000;
+  border-radius: 10rpx;
+  border: 2rpx solid #333;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* 确保子元素绝对定位相对于此容器 */
+  overflow: hidden; /* 防止内容溢出 */
+}
+
+/* 媒体显示区域（作为背景层） */
+.media-display {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+}
+
+.screen-media {
+  width: 100%;
+  height: 100%;
+  opacity: 0.6; /* 稍微调暗一点，让文字更清晰 */
+}
+
+.song-info {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding-top: 20rpx;
+  width: 100%;
+}
+
+.song-title {
+  display: block;
+  margin-bottom: 8rpx;
+  image-rendering: pixelated;
+}
+
+.song-artist {
+  display: block;
+  font-family: 'Courier New', monospace;
+}
+
+/* 字幕式歌词显示区域 */
+.lyrics-display.subtitle-mode {
+  position: absolute;
+  bottom: 80rpx; /* 距离底部一段距离，留给进度条 */
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 5;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+}
+
+.subtitle-text {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.5); /* 半透明背景 */
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  line-height: 1.4;
+  transition: all 0.3s ease;
+}
+
+/* 移除旧的歌词样式 */
+/* .lyrics-display { ... } */
+/* .lyrics-line { ... } */
+/* .lyrics-text { ... } */
+
+.progress-bar {
+  position: absolute;
+  bottom: 40rpx;
+  left: 5%;
+  width: 90%;
+  z-index: 5;
+  height: 6rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3rpx;
+  transition: all 0.3s ease;
+}
+
+.time-display {
+  position: absolute;
+  bottom: 10rpx;
+  left: 5%;
+  width: 90%;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.current-time, .total-time {
+  font-size: 20rpx;
+  font-family: 'Courier New', monospace;
+}
+
+/* 控制按钮区域 */
+.mp3-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+/* 控制面板布局（居中） */
+.mp3-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx; /* 上下间距增加5rpx */
+  margin-top: 12rpx; /* 整体向下平移12rpx */
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 41rpx; /* 第一行和第三行左右间距增加5rpx */
+}
+
+/* 第二行增加间距 */
+.control-row:nth-child(2) {
+  gap: 33rpx; /* 第二行左右间距增加5rpx */
+}
+
+.control-left,
+.control-center,
+.control-right,
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #999; /* 浅色像素风格背景 */
+  border: 3rpx solid #666; /* 浅色像素边框 */
+  box-shadow:
+    3rpx 3rpx 0px #333, /* 浅色像素阴影 */
+    inset -2rpx -2rpx 0px #bbb; /* 浅色内高光 */
+  transition: all 0.2s ease;
+  image-rendering: pixelated;
+  width: 70rpx;
+  height: 70rpx;
+}
+
+.control-btn:active {
+  box-shadow:
+    1rpx 1rpx 0px #333, /* 按下时的浅色像素阴影 */
+    inset 2rpx 2rpx 0px #777; /* 按下时的浅色内阴影 */
+}
+
+/* 主按钮样式 - 更大的尺寸和深色 */
+.main-btn {
+  width: 90rpx !important;
+  height: 90rpx !important;
+  background: #333 !important; /* 深色背景 */
+  border-color: #111 !important; /* 更深的边框 */
+  box-shadow:
+    3rpx 3rpx 0px #000, /* 统一的像素阴影 */
+    inset -3rpx -3rpx 0px #555 !important; /* 深色内高光 */
+}
+
+.control-center {
+  width: 90rpx;
+  height: 90rpx;
+  background: #00aa00 !important; /* 绿色像素风格，覆盖主按钮的深色 */
+  border-color: #006600 !important;
+  box-shadow:
+    4rpx 4rpx 0px #000, /* 更大的像素阴影 */
+    inset -3rpx -3rpx 0px #00cc00 !important; /* 内高光 */
+}
+
+
+
+.play-btn .play-icon {
+  font-size: 42rpx;
+  color: #ffffff;
+  text-shadow: 2rpx 2rpx 0px #000000;
+}
+
+
+.empty-btn {
+  background: #aaa; /* 浅色，表示无功能 */
+  opacity: 0.8;
+}
+
+.empty-btn:active {
+  transform: none; /* 空按钮不响应点击 */
+}
+
+/* 装饰按钮 - 旋转动画 */
+.decoration-btn {
+  background: #ccc; /* 稍深的浅色背景 */
+}
+
+.decoration-icon {
+  width: 56rpx;
+  height: 56rpx;
+  animation: rotate 3s linear infinite; /* 持续旋转动画 */
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+.control-icon {
+  font-size: 28rpx !important;
+}
+
+.control-icon-img {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+
+
+
+
+/* 播放模式 */
+.play-mode {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20rpx;
+}
+
+/* 模式按钮 - 继承主按钮样式，保持一致性 */
+
+/* 收藏按钮样式 */
+.favorite-btn {
+  /* 继承浅色按钮样式 */
+}
+
+/* 移除不再使用的mode-icon和mode-text样式 */
+
+/* 删除不再使用的mode-btn.active .mode-text样式 */
+
+/* 删除不再使用的play-mode-btn样式 */
+
+/* MP3功能栏 - 简洁文字按钮 */
+.function-bar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 5rpx 0 10rpx 0; /* 整体向上平移5rpx */
+  padding: 15rpx 20rpx;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 2rpx 4rpx rgba(0, 0, 0, 0.3),
+    0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+}
+
+.function-text {
+  font-size: 20rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 1rpx 1rpx 0px #000000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 10rpx 15rpx;
+  border: 2rpx solid #666;
+  border-radius: 8rpx;
+  background: linear-gradient(135deg, #444 0%, #666 50%, #444 100%);
+  box-shadow:
+    2rpx 2rpx 0px #000,
+    inset -2rpx -2rpx 0px #222,
+    inset 1rpx 1rpx 0px #888;
+  position: relative;
+}
+
+.function-text:active {
+  transform: translate(1rpx, 1rpx);
+  box-shadow:
+    1rpx 1rpx 0px #000,
+    inset -1rpx -1rpx 0px #222,
+    inset 2rpx 2rpx 0px #888;
+}
+
+.function-text.active {
+  background: linear-gradient(135deg, #222 0%, #444 50%, #222 100%);
+  border-color: #333;
+  color: #cccccc;
+  text-shadow: 1rpx 1rpx 0px #000000;
+}
+
+/* 展开面板 - 悬浮列表样式 */
+.expand-panel {
+  position: absolute;
+  top: -70rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  min-width: 300rpx;
+}
+
+.panel-content {
+  background: linear-gradient(135deg, #333 0%, #555 50%, #333 100%);
+  border: 3rpx solid #666;
+  border-radius: 12rpx;
+  box-shadow:
+    0 4rpx 12rpx rgba(0, 0, 0, 0.5),
+    0 2rpx 4rpx rgba(0, 0, 0, 0.3),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1rpx 0 rgba(0, 0, 0, 0.3);
+  padding: 15rpx;
+  margin: 0;
+}
+
+.panel-header {
+  font-size: 20rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 1rpx 1rpx 0px #000000;
+  text-align: center;
+  margin-bottom: 12rpx;
+}
+
+/* 倍速选项网格 */
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8rpx;
+}
+
+.option-btn {
+  height: 45rpx;
+  background: linear-gradient(135deg, #444 0%, #666 50%, #444 100%);
+  border: 2rpx solid #777;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    1rpx 1rpx 0px #000,
+    inset -1rpx -1rpx 0px #333,
+    inset 1rpx 1rpx 0px #777;
+}
+
+.option-btn:active {
+  transform: translate(1rpx, 1rpx);
+  box-shadow:
+    0 0 0px #000,
+    inset -1rpx -1rpx 0px #333,
+    inset 2rpx 2rpx 0px #777;
+}
+
+.option-btn.selected {
+  background: linear-gradient(135deg, #555 0%, #888 50%, #555 100%);
+  border-color: #aaa;
+  box-shadow:
+    1rpx 1rpx 0px #000,
+    inset -1rpx -1rpx 0px #444,
+    inset 1rpx 1rpx 0px #999;
+}
+
+.option-text {
+  font-size: 16rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 1rpx 1rpx 0px #000000;
+}
+
+/* 字体大小选项 */
+.size-options {
+  display: flex;
+  justify-content: center;
+  gap: 15rpx;
+}
+
+.size-option {
+  width: 70rpx;
+  height: 50rpx;
+  background: linear-gradient(135deg, #444 0%, #666 50%, #444 100%);
+  border: 2rpx solid #777;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    1rpx 1rpx 0px #000,
+    inset -1rpx -1rpx 0px #333,
+    inset 1rpx 1rpx 0px #777;
+}
+
+.size-option:active {
+  transform: translate(1rpx, 1rpx);
+  box-shadow:
+    0 0 0px #000,
+    inset -1rpx -1rpx 0px #333,
+    inset 2rpx 2rpx 0px #777;
+}
+
+.size-option.selected {
+  background: linear-gradient(135deg, #555 0%, #888 50%, #555 100%);
+  border-color: #aaa;
+  box-shadow:
+    1rpx 1rpx 0px #000,
+    inset -1rpx -1rpx 0px #444,
+    inset 1rpx 1rpx 0px #999;
+}
+
+.size-text {
+  font-size: 20rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 1rpx 1rpx 0px #000000;
+}
+
+/* 字体颜色选项 */
+.color-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10rpx;
+  justify-items: center;
+}
+
+.color-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8rpx;
+  border-radius: 8rpx;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.color-option:active {
+  transform: scale(0.95);
+}
+
+.color-option.selected {
+  background: rgba(255, 255, 0, 0.2);
+  border: 2rpx solid #ffff00;
+}
+
+.color-swatch {
+  width: 35rpx;
+  height: 35rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.color-option.selected .color-swatch {
+  border-color: #ffff00;
+  box-shadow: 0 0 12rpx rgba(255, 255, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.color-swatch.black {
+  background: #000000;
+}
+
+.color-swatch.white {
+  background: #ffffff;
+}
+
+.color-swatch.green {
+  background: #00ff00;
+}
+
+.color-swatch.blue {
+  background: #0088ff;
+}
+
+.color-swatch.red {
+  background: #ff0000;
+}
+
+.color-swatch.goose {
+  background: #ffd700;
+}
+
+.color-label {
+  font-size: 16rpx;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px #000000;
+}
+
+/* 点击遮罩关闭面板 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 999;
+}
+
+/* MP3品牌标识 */
+.mp3-brand {
+  text-align: center;
+  margin-top: auto;
+  padding-top: 20rpx;
+  border-top: 2rpx solid rgba(0, 0, 0, 0.1);
+}
+
+.brand-text {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #000000; /* 黑色字体 */
+  font-family: 'Courier New', monospace;
+  text-shadow: 2rpx 2rpx 0px #ffffff;
+}
+
+.brand-subtitle {
+  display: block;
+  font-size: 20rpx;
+  color: #000000; /* 黑色字体 */
+  font-family: 'Courier New', monospace;
+  margin-top: 4rpx;
+  text-shadow: 1rpx 1rpx 0px #ffffff;
+}
+
+
+/* ===== 播放列表面板 ===== */
+.playlist-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60vh;
+  background: rgba(0, 0, 0, 0.85); /* 稍微加深一点 */
+  backdrop-filter: blur(10rpx);
+  border-top: 2rpx solid rgba(255, 255, 255, 0.1);
+  transform: translateY(100%);
+  transition: transform 0.4s ease;
+  z-index: 20;
+  border-radius: 20rpx 20rpx 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-panel.visible {
+  transform: translateY(0);
+}
+
+.playlist-header {
+  display: flex;
+  flex-direction: column;
+  padding: 30rpx 30rpx 20rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+  gap: 20rpx;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 70rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 35rpx;
+  padding: 0 30rpx;
+  color: #ffffff;
+  font-size: 26rpx;
+  font-family: 'Courier New', monospace;
+}
+
+.search-placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.filter-btn {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.filter-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.filter-btn.active {
+  background: rgba(255, 100, 100, 0.2);
+  border-color: rgba(255, 100, 100, 0.6);
+  box-shadow: 0 0 15rpx rgba(255, 100, 100, 0.2);
+}
+
+.filter-icon {
+  font-size: 32rpx;
+}
+
+.playlist-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px #000000;
+}
+
+.close-playlist {
+  font-size: 36rpx;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 8rpx;
+}
+
+.playlist-scroll {
+  flex: 1;
+  height: 0; /* 确保 scroll-view 在 flex 容器中正确滚动 */
+}
+
+.song-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  color: #ffffff;
+}
+
+.song-item:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.song-item.playing {
+  background: rgba(0, 255, 136, 0.15);
+  border-left: 3rpx solid #00ff88;
+}
+
+.song-number {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.song-item.playing .song-number {
+  background: #00ff88;
+  color: #000000;
+}
+
+.song-details {
+  flex: 1;
+}
+
+.item-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 4rpx;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1rpx 1rpx 0px #000000;
+}
+
+.item-artist {
+  display: block;
+  font-size: 22rpx;
+  color: #cccccc;
+  font-family: 'Courier New', monospace;
+}
+
+.song-favorite {
+  margin-right: 16rpx;
+}
+
+.favorite-icon {
+  font-size: 24rpx;
+}
+
+.song-duration {
+  font-size: 22rpx;
+  color: #cccccc;
+  font-family: 'Courier New', monospace;
+}
+
+
+/* ===== 动画效果 ===== */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.mp3-body {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.play-btn.active {
+  animation: pulse 1.5s ease-in-out infinite;
+}

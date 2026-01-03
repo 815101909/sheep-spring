@@ -1,0 +1,76 @@
+<!--pages/profile/profile.wxml-->
+<!-- 背景层 -->
+<view class="background-container">
+  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
+</view>
+
+<!-- 主要内容 -->
+<view class="profile-content">
+  <!-- 头像区域 -->
+  <view class="avatar-section">
+    <!-- 当前头像 -->
+    <view class="current-avatar-container">
+      <image class="current-avatar" src="{{userAvatar || ''}}" mode="aspectFill" />
+
+      <!-- 用户名显示/编辑 -->
+      <view wx:if="{{!isEditingName}}" class="name-edit-container" bindtap="onNameEdit">
+        <text class="current-avatar-name">{{userName}}</text>
+        <text class="edit-icon">✏️</text>
+      </view>
+
+      <!-- 直接编辑模式 -->
+      <view wx:if="{{isEditingName}}" class="name-edit-container">
+        <input class="name-input-inline" value="{{tempUserName}}" bindinput="onNameInput" bindblur="onNameConfirm" bindconfirm="onNameConfirm" placeholder="请输入用户名" maxlength="20" focus="{{isEditingName}}" />
+        <text class="edit-icon confirm-icon" bindtap="onNameConfirm">✓</text>
+      </view>
+    </view>
+
+    <!-- 头像选择 -->
+    <view class="avatar-choices">
+      <view class="avatar-choice {{currentAvatar === item.avatarUrl ? 'active' : ''}}" wx:for="{{avatarList}}" wx:key="avatarUrl" bindtap="selectAvatar" data-avatar="{{item.avatarUrl}}">
+        <image class="choice-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 信息显示区域 -->
+  <view class="settings-section">
+    <!-- 手机号 -->
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">📱</text>
+        <text class="setting-text">手机号</text>
+      </view>
+      <text class="setting-value">{{userPhone}}</text>
+    </view>
+
+    <!-- 用户ID -->
+    <view class="setting-item" bindtap="copyUserId">
+      <view class="setting-left">
+        <text class="setting-icon">👤</text>
+        <text class="setting-text">用户ID</text>
+      </view>
+      <text class="setting-value">{{userId}}</text>
+    </view>
+  </view>
+
+  <!-- 设置选项 -->
+  <view class="settings-section">
+    <!-- 背景音乐 -->
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">🎵</text>
+        <text class="setting-text">背景音乐</text>
+      </view>
+      <switch class="music-switch" checked="{{backgroundMusicEnabled}}" bindchange="onMusicToggle" />
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="setting-item logout-item" bindtap="onLogout">
+      <view class="setting-center">
+        <text class="setting-icon">🚪</text>
+        <text class="setting-text logout-text">退出登录</text>
+      </view>
+    </view>
+  </view>
+</view>

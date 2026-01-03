@@ -1,0 +1,390 @@
+/* 收藏库页面样式 */
+.collection-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.page-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* 内容区域 */
+.collection-content {
+  position: relative;
+  z-index: 1;
+  padding: 20rpx;
+}
+
+/* 统计区域 */
+.stats-section {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding: 30rpx;
+  background: rgba(255, 250, 205, 0.3);
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  border: 2rpx solid rgba(255, 250, 205, 0.5);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #FFD700;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 标签页 */
+.tab-section {
+  display: flex;
+  margin-bottom: 30rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.tab-item {
+  flex: 1;
+  padding: 20rpx;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-item.active {
+  background: rgba(255, 250, 205, 0.8);
+  color: #333;
+}
+
+.tab-item:not(.active):hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.tab-text {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 4rpx;
+  background: white;
+  border-radius: 2rpx;
+}
+
+/* 列表区域 */
+.list-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #e1e5e9;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.section-count {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 40rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.6;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+/* 音乐列表 */
+.music-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  background: rgba(255, 250, 205, 0.4) !important;
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+.music-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 12rpx;
+  transition: all 0.2s ease;
+}
+
+.music-item:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: translateX(4rpx);
+}
+
+.music-cover {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 8rpx;
+  margin-right: 20rpx;
+  background: #f0f0f0;
+}
+
+.music-info {
+  flex: 1;
+}
+
+.music-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6rpx;
+  display: block;
+}
+
+.music-artist {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.play-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 250, 205, 0.8) 0%, rgba(255, 235, 150, 0.8) 100%);
+  border: 2rpx solid rgba(255, 250, 205, 0.5);
+  border-radius: 30rpx;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.play-btn:active {
+  transform: scale(0.9);
+}
+
+.play-icon {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 12rpx 0 12rpx 20rpx; /* 上、右、下、左 */
+  border-color: transparent transparent transparent #ffffff;
+  margin-left: 4rpx; /* 视觉居中微调 */
+}
+
+/* 文章列表 */
+.article-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300rpx, 1fr));
+  gap: 20rpx;
+  background: rgba(255, 250, 205, 0.15);
+  border-radius: 16rpx;
+  padding: 20rpx;
+}
+
+/* 电影卡片样式 */
+.film-card.collection-card {
+  border-radius: 12rpx;
+  position: relative;
+  width: 100%;
+  height: 200rpx;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+}
+
+.film-card.collection-card.small-card {
+  height: 200rpx;
+}
+
+.film-card.collection-card:hover {
+  transform: translateY(-4rpx);
+  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.15);
+}
+
+.film-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  border-radius: 12rpx;
+  pointer-events: none;
+}
+
+.card-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.card-cover.relax-cover .card-bar {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.9) 100%);
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.film-card.collection-card:hover .cover-image {
+  transform: scale(1.05);
+}
+
+.card-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.9) 100%);
+  padding: 8rpx 16rpx;
+  backdrop-filter: blur(4rpx);
+}
+
+.card-bar-text {
+  text-align: center;
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: bold;
+  display: block;
+  line-height: 1.2;
+}
+
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .collection-content {
+    padding: 15rpx;
+  }
+
+  .stats-section {
+    padding: 20rpx;
+  }
+
+  .stat-number {
+    font-size: 40rpx;
+  }
+
+  .tab-section {
+    margin-bottom: 20rpx;
+  }
+
+  .tab-item {
+    padding: 16rpx;
+  }
+
+  .tab-text {
+    font-size: 26rpx;
+  }
+
+  .list-section {
+    padding: 20rpx;
+  }
+
+  .section-title {
+    font-size: 30rpx;
+  }
+
+  .article-list {
+    grid-template-columns: repeat(auto-fill, minmax(280rpx, 1fr));
+    gap: 15rpx;
+    padding: 15rpx;
+  }
+
+  .film-card.collection-card {
+    height: 180rpx;
+  }
+
+  .film-card.collection-card.small-card {
+    height: 180rpx;
+  }
+
+  .card-bar-text {
+    font-size: 22rpx;
+  }
+
+  .music-list {
+    padding: 15rpx;
+  }
+
+  .music-item,
+  .article-item {
+    padding: 16rpx;
+  }
+
+  .music-title,
+  .article-title {
+    font-size: 26rpx;
+  }
+
+  .music-artist,
+  .article-category,
+  .article-date {
+    font-size: 22rpx;
+  }
+}
+
+
+

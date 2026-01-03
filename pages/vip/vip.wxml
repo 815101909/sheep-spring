@@ -1,0 +1,52 @@
+<view class="vip-container">
+  <!-- 背景图片 -->
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+
+  <!-- 页面内容 -->
+  <view class="vip-content">
+    <!-- A4区域预留 -->
+  <view class="a4-section">
+    <view class="a4-container">
+      <view class="a4-paper">
+        <!-- 会员权益说明图片 -->
+        <image class="vip-promo-image" src="/assets/images/春会员图.png" mode="aspectFill" />
+      </view>
+    </view>
+  </view>
+
+  <view class="plans-section">
+    <block wx:for="{{plans}}" wx:key="planId">
+      <view class="plan-item {{selectedPlanId === item.planId ? 'selected' : ''}}" bindtap="selectPlan" data-planid="{{item.planId}}">
+        <view class="plan-header">
+          <text class="plan-name">{{item.name}}</text>
+          <text class="plan-price">{{item.displayPrice}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 开通按钮 -->
+  <view class="action-section">
+    <button class="subscribe-btn {{selectedPlanId ? 'active' : 'disabled'}}"
+            bindtap="subscribe"
+            disabled="{{!selectedPlanId}}">
+      立即开通
+    </button>
+  </view>
+
+  <!-- 激活码区域 -->
+  <view class="activation-section">
+    <view style="text-align: center;">
+      <view class="section-title">或使用激活码（卡密）兑换</view>
+    </view>
+    <view class="activation-box">
+      <input class="activation-input" 
+             placeholder="请输入激活码"  
+             placeholder-class="input-placeholder" 
+             bindinput="onCodeInput" 
+             value="{{activationCode}}" />
+      <button class="activation-btn" bindtap="activateCode">兑换</button>
+    </view>
+  </view>
+  </view>
+</view>

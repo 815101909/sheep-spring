@@ -1,0 +1,11 @@
+{
+  "name": "spring_get_hoofprint_articles",
+  "version": "1.0.0",
+  "description": "获取蹄印页面文章数据",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

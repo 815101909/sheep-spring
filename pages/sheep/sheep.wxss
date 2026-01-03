@@ -1,0 +1,16 @@
+/* pages/sheep/sheep.wxss */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 50%, #f5faff 100%);
+  position: relative;
+}
+
+.bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  z-index: 1;
+}

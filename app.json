@@ -1,0 +1,51 @@
+{
+  "pages": [
+    "pages/garden/garden",
+    "pages/music/music",
+    "pages/hoofprint/hoofprint",
+    "pages/article-detail/article-detail",
+    "pages/login/login",
+    "pages/profile/profile",
+    "pages/checkin/checkin",
+    "pages/vip/vip",
+    "pages/collection/collection",
+    "pages/service/service"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "春日扬帆",
+    "navigationBarTextStyle": "black"
+  },
+  "requiredBackgroundModes": ["audio"],
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.1",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "tabBar": {
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/garden/garden",
+        "text": "春日扬帆",
+        "iconPath": "assets/images/garden.png",
+        "selectedIconPath": "assets/images/garden.png"
+      },
+      {
+        "pagePath": "pages/music/music",
+        "text": "初春牧歌",
+        "iconPath": "assets/images/music.png",
+        "selectedIconPath": "assets/images/music.png"
+      },
+      {
+        "pagePath": "pages/hoofprint/hoofprint",
+        "text": "仲春蹄印",
+        "iconPath": "assets/images/sheep.png",
+        "selectedIconPath": "assets/images/sheep.png"
+      }
+    ]
+  }
+}
+

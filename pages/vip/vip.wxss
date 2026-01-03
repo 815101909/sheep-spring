@@ -1,0 +1,255 @@
+/* 会员页面样式 */
+.vip-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.page-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* 内容区域 */
+.vip-content {
+  position: relative;
+  z-index: 1;
+  padding: 20rpx;
+}
+
+/* 确保内容区域有良好的可读性 */
+.a4-paper,
+.plan-item,
+
+/* A4区域 */
+.a4-section {
+  margin-bottom: 40rpx;
+}
+
+.a4-container {
+  display: flex;
+  justify-content: center;
+}
+
+.a4-paper {
+  width: 595rpx;
+  height: 842rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2rpx solid #e1e5e9;
+  border-radius: 12rpx;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.a4-placeholder {
+  font-size: 32rpx;
+  color: #999;
+  text-align: center;
+}
+
+.vip-promo-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 会员套餐区域 */
+.plans-section {
+  margin-bottom: 40rpx;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  gap: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-bottom: 30rpx;
+  display: block;
+}
+
+.plan-item {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  flex: 1;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.plan-item:hover {
+  transform: translateY(-2rpx);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.12);
+}
+
+.plan-item.selected {
+  border: 3rpx solid #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+.plan-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.plan-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.plan-price {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #667eea;
+}
+
+
+/* 操作区域 */
+.action-section {
+  margin-top: 40rpx;
+  text-align: center;
+}
+
+.subscribe-btn {
+  width: 300rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.subscribe-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.subscribe-btn.active:active {
+  transform: scale(0.98);
+}
+
+.subscribe-btn.disabled {
+  background: #e1e5e9;
+  color: #999;
+}
+
+/* 激活码区域 */
+.activation-section {
+  margin-top: 60rpx;
+  padding: 0 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  color: #666;
+  text-align: center;
+  margin-bottom: 20rpx;
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  width: auto;
+}
+
+.activation-box {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50rpx;
+  padding: 10rpx 10rpx 10rpx 40rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(86, 171, 47, 0.3);
+}
+
+.activation-input {
+  flex: 1;
+  height: 80rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.input-placeholder {
+  color: #999;
+}
+
+.activation-btn {
+  width: 160rpx !important;
+  height: 70rpx;
+  border-radius: 35rpx;
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  color: white;
+  font-size: 28rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 4rpx 10rpx rgba(86, 171, 47, 0.3);
+}
+
+.activation-btn:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .vip-container {
+    padding: 15rpx;
+  }
+
+  .a4-paper {
+    width: 90vw;
+    height: 127vw;
+  }
+
+
+  .plan-item {
+    padding: 25rpx;
+    margin-bottom: 15rpx;
+  }
+
+  .plan-name {
+    font-size: 26rpx;
+  }
+
+  .plan-price {
+    font-size: 30rpx;
+  }
+
+
+  .section-title {
+    font-size: 30rpx;
+  }
+
+  .action-section {
+    margin-top: 30rpx;
+  }
+
+  .subscribe-btn {
+    width: 250rpx;
+    height: 70rpx;
+    font-size: 28rpx;
+  }
+
+}
