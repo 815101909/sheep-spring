@@ -72,46 +72,73 @@ async function getDailyAvatar(date) {
 async function getDailyAvatarDebug(date) {
   let doc = null
   let matchKey = ''
-  const stats = { eq: 0, dateRange: 0, dateTsRange: 0, publishRange: 0 }
+  const stats = {
+    eq: 0,
+    dateRangeMs: 0,
+    dateRangeSec: 0,
+    dateTsMs: 0,
+    dateTsSec: 0,
+    publishMs: 0,
+    publishSec: 0,
+    publishDateMs: 0,
+    publishDateSec: 0
+  }
+  const candidates = []
   try {
     const col = db.collection('spring_daily_avatar')
     const r1 = await col.where({ date }).limit(1).get()
     stats.eq = r1 && r1.data ? r1.data.length : 0
     if (stats.eq) { doc = r1.data[0]; matchKey = 'date_eq' }
   } catch (e) {}
+  try {
+    const { start, end } = getCnDayRange(date)
+    if (!doc) {
+      const r2 = await db.collection('spring_daily_avatar').where({ date: _.gte(start).lt(end) }).limit(20).get()
+      stats.dateRangeMs = r2 && r2.data ? r2.data.length : 0
+      if (stats.dateRangeMs) candidates.push(...r2.data)
+    }
+    const r3 = await db.collection('spring_daily_avatar').where({ dateTs: _.gte(start).lt(end) }).limit(20).get()
+    stats.dateTsMs = r3 && r3.data ? r3.data.length : 0
+    if (stats.dateTsMs) candidates.push(...r3.data)
+    const r4 = await db.collection('spring_daily_avatar').where({ publish_date: _.gte(start).lt(end) }).limit(20).get()
+    stats.publishMs = r4 && r4.data ? r4.data.length : 0
+    if (stats.publishMs) candidates.push(...r4.data)
+    const r5 = await db.collection('spring_daily_avatar').where({ date: _.gte(start / 1000).lt(end / 1000) }).limit(20).get()
+    stats.dateRangeSec = r5 && r5.data ? r5.data.length : 0
+    if (stats.dateRangeSec) candidates.push(...r5.data)
+    const r6 = await db.collection('spring_daily_avatar').where({ dateTs: _.gte(start / 1000).lt(end / 1000) }).limit(20).get()
+    stats.dateTsSec = r6 && r6.data ? r6.data.length : 0
+    if (stats.dateTsSec) candidates.push(...r6.data)
+    const r7 = await db.collection('spring_daily_avatar').where({ publish_date: _.gte(start / 1000).lt(end / 1000) }).limit(20).get()
+    stats.publishSec = r7 && r7.data ? r7.data.length : 0
+    if (stats.publishSec) candidates.push(...r7.data)
+    const r8 = await db.collection('spring_daily_avatar').where({ publishDate: _.gte(start).lt(end) }).limit(20).get()
+    stats.publishDateMs = r8 && r8.data ? r8.data.length : 0
+    if (stats.publishDateMs) candidates.push(...r8.data)
+    const r9 = await db.collection('spring_daily_avatar').where({ publishDate: _.gte(start / 1000).lt(end / 1000) }).limit(20).get()
+    stats.publishDateSec = r9 && r9.data ? r9.data.length : 0
+    if (stats.publishDateSec) candidates.push(...r9.data)
+  } catch (e2) {}
+  if (!doc) {
+    if (candidates.length) { doc = candidates[0]; matchKey = 'first_candidate' }
+  }
   if (!doc) {
     try {
-      const { start, end } = getCnDayRange(date)
-      const r2 = await db.collection('spring_daily_avatar').where({ date: _.gte(start).lt(end) }).limit(1).get()
-      stats.dateRange = r2 && r2.data ? r2.data.length : 0
-      if (stats.dateRange) { doc = r2.data[0]; matchKey = 'date_range' }
-      if (!doc) {
-        const r3 = await db.collection('spring_daily_avatar').where({ dateTs: _.gte(start).lt(end) }).limit(1).get()
-        stats.dateTsRange = r3 && r3.data ? r3.data.length : 0
-        if (stats.dateTsRange) { doc = r3.data[0]; matchKey = 'dateTs_range' }
+      const r5 = await db.collection('spring_daily_avatar').orderBy('date', 'desc').limit(1).get()
+      const cnt = r5 && r5.data ? r5.data.length : 0
+      if (cnt) {
+        const last = r5.data[0]
+        const ds = toDateStrFromTs(last.date)
+        if (ds === date) { doc = last; matchKey = 'date_orderby_fallback' }
       }
-      if (!doc) {
-        const r4 = await db.collection('spring_daily_avatar').where({ publish_date: _.gte(start).lt(end) }).limit(1).get()
-        stats.publishRange = r4 && r4.data ? r4.data.length : 0
-        if (stats.publishRange) { doc = r4.data[0]; matchKey = 'publish_date_range' }
-      }
-      if (!doc) {
-        const r5 = await db.collection('spring_daily_avatar').orderBy('date', 'desc').limit(1).get()
-        const cnt = r5 && r5.data ? r5.data.length : 0
-        if (cnt) {
-          const last = r5.data[0]
-          const ds = toDateStrFromTs(last.date)
-          if (ds === date) { doc = last; matchKey = 'date_orderby_fallback' }
-        }
-      }
-    } catch (e2) {}
+    } catch (e3) {}
   }
   return { doc, stats, matchKey }
 }
 
-async function ensureUnlock(userId, openid, avatarId, avatarUrl, checkinId, date) {
+async function ensureUnlockByDate(userId, openid, avatarUrl, checkinId, date, dailyAvatarId) {
   try {
-    const unlockId = `spring_${userId}_${avatarId}`
+    const unlockId = `spring_${userId}_${date}`
     const exists = await db.collection('spring_avatar_unlock').where({ _id: unlockId }).get()
     if (!exists.data || exists.data.length === 0) {
       await db.collection('spring_avatar_unlock').add({
@@ -119,12 +146,12 @@ async function ensureUnlock(userId, openid, avatarId, avatarUrl, checkinId, date
           _id: unlockId,
           _openid: openid,
           userId,
-          avatarId,
           avatarUrl: avatarUrl || '',
-          unlockedAt: db.serverDate(),
+          unlockedAt: Date.now(),
           source: 'daily',
           checkinId,
-          checkinDate: date
+          checkinDate: date,
+          dailyAvatarId: dailyAvatarId || ''
         }
       })
     }
@@ -152,8 +179,8 @@ async function updateUserStats(user, date) {
       data: {
         checkinDays: continuousDays,
         totalCheckins: total,
-        lastCheckinDate: date,
-        updateTime: db.serverDate()
+        lastCheckinDate: Date.now(),
+        updateTime: Date.now()
       }
     })
   } catch (e) {
@@ -194,9 +221,9 @@ exports.main = async (event, context) => {
     const dailyInfo = await getDailyAvatarDebug(date)
     const daily = dailyInfo.doc
     console.log('spring_do_checkin:daily', { exists: !!daily, avatarId: daily && daily.avatarId, matchKey: dailyInfo.matchKey, stats: dailyInfo.stats })
-    const hasAvatar = !!(daily && daily.avatarId)
+    const hasAvatar = !!daily
     let rewardStatus = hasAvatar ? 'success' : 'fail'
-    let rewardAvatarId = hasAvatar ? daily.avatarId : ''
+    let rewardAvatarId = ''
     let rewardAvatarUrl = hasAvatar ? (daily.avatarUrl || '') : ''
 
     const writeDoc = {
@@ -204,14 +231,14 @@ exports.main = async (event, context) => {
       _openid: openid,
       userId: user.userId,
       date,
-      checkedAt: db.serverDate(),
+      checkedAt: Date.now(),
       rewardStatus,
       hasAvatar,
       rewardAvatarId,
       rewardAvatarUrl,
       dailyAvatarId: daily ? daily._id || '' : '' ,
-      createdAt: db.serverDate(),
-      updatedAt: db.serverDate()
+      createdAt: Date.now(),
+      updatedAt: Date.now()
     }
 
     let addRes
@@ -224,8 +251,8 @@ exports.main = async (event, context) => {
     }
 
     if (hasAvatar) {
-      await ensureUnlock(user.userId, openid, rewardAvatarId, rewardAvatarUrl, checkinId, date)
-      console.log('spring_do_checkin:ensureUnlock_done', { avatarId: rewardAvatarId })
+      await ensureUnlockByDate(user.userId, openid, rewardAvatarUrl, checkinId, date, daily ? daily._id || '' : '')
+      console.log('spring_do_checkin:ensureUnlock_done', { date })
     }
 
     await updateUserStats(user, date)

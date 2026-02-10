@@ -61,7 +61,7 @@ exports.main = async (event, context) => {
       data: {
         status: 'used', // 标记为已使用
         usedBy: userOpenid,
-        usedTime: db.serverDate()
+        usedTime: Date.now()
       }
     })
 
@@ -93,7 +93,7 @@ exports.main = async (event, context) => {
             data: {
                 isVip: true,
                 vipExpireTime: expireTime,
-                updateTime: db.serverDate()
+                updateTime: Date.now()
             }
         });
     } else {

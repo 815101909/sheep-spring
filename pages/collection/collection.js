@@ -56,6 +56,7 @@ Page({
     allArticles.forEach(item => {
       const raw = item.data || {};
       const ct = raw.cardType || raw.card_type || 'main';
+      if (ct === 'small') return; // 过滤掉小卡片收藏
       const key = `${item.id}_${ct}`;
       if (!seenKeys.has(key)) {
         seenKeys.add(key);

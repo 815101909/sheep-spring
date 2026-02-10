@@ -19,84 +19,334 @@
   width: 100%;
   height: 100vh;
   z-index: -1;
-  opacity: 0.3;
+}
+
+.background-container.dark {
+  background: #121212;
 }
 
 .background-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0.3;
+}
+.background-container.dark .background-image {
+  opacity: 0.8;
+}
+.background-container.dark::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 /* 顶部轮播区域 */
 .top-carousel {
   position: relative;
-  height: 410rpx;
+  height: 450rpx; /* 增加高度以容纳旋转效果 */
   width: calc(100% - 120rpx);
-  margin: 45rpx 60rpx 20rpx 60rpx;
-  border-radius: 12rpx;
+  margin: 45rpx 60rpx 40rpx 60rpx; /* 增加底部边距 */
+  /* border-radius: 12rpx; 删除 overflow:hidden 以允许卡片旋转超出 */
   z-index: 2;
-  overflow: hidden;
+  /* overflow: hidden; */ 
 }
 
-/* 轮播左上角斜线徽章 */
-.carousel-badge {
-  position: absolute;
-  top: 12rpx;
-  left: 12rpx;
-  padding: 10rpx 18rpx;
-  background: rgba(255, 255, 255, 0.85);
-  border: 2rpx solid rgba(0, 0, 0, 0.1);
-  border-radius: 14rpx;
-  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22rpx;
-  font-weight: 600;
-  color: #333333;
-  letter-spacing: 1rpx;
-  backdrop-filter: blur(6rpx);
-  pointer-events: none;
+/* 拍立得风格容器 */
+.polaroid-style {
+    overflow: visible !important;
+    background: transparent;
+    box-shadow: none;
 }
 
-/* 移除徽章的边角装饰 */
-
-.carousel-swiper {
-  height: 100%;
-  width: 100%;
-  border-radius: 12rpx;
-  overflow: hidden;
+.carousel-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
 }
 
-.carousel-card {
+/* 拍立得卡片 */
+.polaroid-card {
+    width: 80%;
+    height: 100%;
+    background: #fff;
+    padding: 16rpx 16rpx 70rpx 16rpx; /* 底部留白大一点 */
+    position: absolute;
+    left: 10%;
+    top: 0;
+    box-shadow: 0 6rpx 16rpx rgba(0,0,0,0.4); /* 稍微加一点点投影，比0.06深一点，比0.15浅 */
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center 80%;
+    opacity: 0;
+    border-radius: 4rpx;
+    box-sizing: border-box;
+}
+
+.polaroid-card .card-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* filter: sepia(30%); 小程序可能不完全支持 filter，视真机情况而定，这里先写上 */
+    border-radius: 2rpx;
+}
+
+/* 拍立得卡片内的遮罩层去掉 */
+.polaroid-card .card-overlay {
+    display: none;
+}
+
+/* 标签样式 - 覆盖原有的 badge 样式 */
+.polaroid-card .tag-badge {
+    position: absolute;
+    top: -16rpx;
+    left: -16rpx;
+    background-color: #e3d5ca;
+    color: #5e503f;
+    padding: 10rpx 20rpx;
+    border-radius: 6rpx;
+    box-shadow: 2rpx 2rpx 6rpx rgba(0,0,0,0.15);
+    transform: rotate(-8deg);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    font-size: 24rpx;
+    font-weight: bold;
+    border: 2rpx solid rgba(255,255,255,0.5);
+}
+
+/* 调整 badge 内的图标 */
+.polaroid-card .badge-icon {
+    width: 32rpx;
+    height: 32rpx;
+    margin-right: 10rpx;
+    background: transparent; /* 去掉背景，直接显示图标 */
+    border: none;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge-svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* 移除旧的 sparkle 样式和 gentle-icon 的背景/边框 */
+.polaroid-card .gentle-icon {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    animation: none;
+}
+.polaroid-card .gentle-icon::after {
+    display: none;
+}
+
+.polaroid-card .badge-text {
+    color: #5e503f;
+    text-shadow: none;
+}
+
+/* 状态控制 */
+.polaroid-card.active {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+    z-index: 10;
+}
+.polaroid-card.prev {
+    opacity: 0.6;
+    transform: rotate(-8deg) translateX(-60rpx) scale(0.9);
+    z-index: 5;
+}
+.polaroid-card.next {
+    opacity: 0.6;
+    transform: rotate(6deg) translateX(60rpx) scale(0.9);
+    z-index: 4;
+}
+
+/* 导航按钮 */
+.nav-btn {
+    position: absolute;
+    top: 58%; /* 还原回稍微偏下的位置 */
+    transform: translateY(-50%);
+    width: 64rpx;
+    height: 64rpx;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.1);
+}
+.nav-btn.prev { left: -30rpx; }
+.nav-btn.next { right: -30rpx; }
+.nav-arrow { 
+    font-size: 36rpx; 
+    color: #a68b6c; /* 浅棕色 */
+    font-weight: bold; 
+    margin-top: 4rpx; /* 箭头符号下移 */
+    margin-left: 2rpx;
+    font-family: monospace;
+}
+
+/* 试读区块样式与顶部一致但与其分隔 */
+.trial-section {
   position: relative;
-  height: 100%;
-  width: 100%;
-  border-radius: 12rpx;
-  overflow: hidden;
-  margin: 0 20rpx;
+  height: 480rpx; /* 高度增加适配立体书 */
+  width: calc(100% - 120rpx);
+  margin: 60rpx 60rpx 10rpx 60rpx; 
+  /* border-radius: 12rpx;  移除裁切，让阴影显示 */
+  z-index: 2;
+  overflow: visible !important;
+  background: transparent;
+  box-shadow: none;
+  top: -40rpx; /* 整体上移 */
+  margin-top: 10rpx; /* 强制减少顶部边距 */
 }
 
-.card-bg {
+/* 书本容器 */
+.book-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+}
+
+/* 书本包装层 */
+.book-wrapper {
+  position: relative;
+  width: 540rpx; /* 横向更宽 (360px -> ~540rpx) */
+  height: 360rpx; /* (240px -> ~360rpx) */
+  transform-style: preserve-3d;
+  transform: rotateY(-15deg) rotateX(10deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 18rpx 22rpx 45rpx rgba(0,0,0,0.12);
+}
+
+.book-wrapper:active {
+  transform: rotateY(-5deg) rotateX(5deg) translateY(-8rpx);
+  box-shadow: 27rpx 38rpx 60rpx rgba(0,0,0,0.15);
+}
+
+/* 丝带标签 */
+.ribbon-badge {
+  position: absolute;
+  top: -9rpx;
+  left: 10rpx;
+  width: 48rpx; 
+  height: 150rpx; 
+  background: #b5838d; /* 干枯玫瑰色 */
+  z-index: 25;
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  justify-content: flex-start; 
+  color: #fff;
+  box-shadow: 3rpx 4rpx 9rpx rgba(0,0,0,0.15);
+  padding-top: 18rpx; 
+  transform-origin: top center;
+  transition: transform 0.3s ease;
+}
+
+.ribbon-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -15rpx;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 24rpx solid #b5838d; 
+  border-right: 24rpx solid #b5838d; 
+  border-bottom: 15rpx solid transparent;
+}
+
+.ribbon-icon {
+  width: 28rpx;
+  height: 28rpx;
+  margin-bottom: 10rpx;
+  /* SVG base64 image used */
+}
+
+.ribbon-text {
+  writing-mode: vertical-rl;
+  letter-spacing: 4rpx;
+  font-size: 20rpx;
+  font-family: 'Noto Serif SC', serif;
+  font-weight: bold;
+}
+
+/* 封面 */
+.book-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 4rpx 10rpx 10rpx 4rpx;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.book-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.card-overlay {
+/* 书脊 (侧面) */
+.book-spine {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
+  width: 36rpx; /* 厚度 */
+  height: 100%;
+  background: linear-gradient(to right, #ddd, #f0f0f0, #ccc);
+  transform-origin: left;
+  transform: rotateY(90deg);
+  border-radius: 4rpx 0 0 4rpx;
+}
+
+/* 书页 (右侧) */
+.book-pages-right {
+  position: absolute;
+  top: 4rpx;
   right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 40rpx 30rpx 20rpx;
-  color: white;
+  width: 32rpx;
+  height: 352rpx;
+  background: linear-gradient(to right, #fff 0%, #f4f4f4 100%);
+  transform-origin: right;
+  transform: rotateY(90deg) translateZ(32rpx);
+  z-index: 1;
+}
+
+/* 旧样式清理 (原 .carousel-badge 等) */
+.carousel-badge, .carousel-swiper, .carousel-card, .card-bg, .card-overlay {
+  /* display: none; */ 
+  /* 保留一些通用类以免影响其他地方，但此处已不再使用 */
+}
+
+.empty-tip {
+  height: 100%;
+  width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  color: #444;
+  font-size: 26rpx;
+  background: rgba(255,255,255,0.6);
+  border-radius: 12rpx;
+}
+.timeline-container.dark .empty-tip {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 
@@ -190,6 +440,9 @@
   font-weight: bold;
   color: #333;
   font-family: 'Courier New', monospace;
+}
+.filter-container.dark .filter-label {
+  color: #e6edf3;
 }
 
 .filter-separator {
@@ -345,6 +598,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  top: -80rpx; /* 整体上移 */
 }
 
 /* 时间线主轴 */
@@ -376,9 +630,11 @@
   .top-carousel {
     height: 310rpx;
     width: calc(100% - 110rpx);
-    margin: 50rpx 55rpx 15rpx 55rpx;
+    margin: 30rpx 55rpx 15rpx 55rpx; /* 减少顶部 margin (原50rpx -> 30rpx) */
     border-radius: 10rpx;
-    overflow: hidden;
+    overflow: visible; /* 确保不裁剪 */
+    position: relative;
+    top: -70rpx; /* 原-20rpx 再上移 50rpx */
   }
 
   .card-title {
@@ -405,6 +661,8 @@
   .filter-container {
     padding: 20rpx;
     margin: 30rpx 15rpx 20rpx 15rpx;
+    position: relative;
+    top: -50rpx; /* 整体上移 */
   }
 
   .filter-row {
@@ -501,6 +759,10 @@
   margin-left: -40rpx; /* 向左平移100rpx，与卡片左侧对齐 */
   pointer-events: none;
 }
+.timeline-container.dark .node-date {
+  background: rgba(29, 29, 29, 0.9);
+  box-shadow: 0 3rpx 12rpx rgba(0, 0, 0, 0.4);
+}
 
 .date-text {
   display: block;
@@ -509,6 +771,9 @@
   color: var(--primary-color);
   font-family: 'Courier New', monospace;
   line-height: 1.2;
+}
+.timeline-container.dark .date-text {
+  color: #e6edf3;
 }
 
 .day-text {
@@ -694,6 +959,8 @@
   .timeline-container {
     padding: 40rpx 20rpx 120rpx;
     margin-top: 10rpx;
+    position: relative;
+    top: -50rpx; /* 整体上移 */
   }
 
   .node-cards-wrapper {

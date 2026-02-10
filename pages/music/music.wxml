@@ -1,6 +1,6 @@
 <!--pages/music/music.wxml-->
-<view class="container">
-  <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill"></image>
+<view class="container {{themeClass}}">
+  <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill" lazy-load="true"></image>
 
   <!-- MP3播放器主体 -->
   <view class="mp3-player">
@@ -22,14 +22,17 @@
               object-fit="contain"
               class="screen-media"
               muted="{{!!currentSong.audio_url}}"
+              bindplay="onVideoPlay"
+              bindpause="onVideoPause"
               bindtimeupdate="onVideoTimeUpdate"
               bindended="onVideoEnded">
             </video>
             <!-- 图片 -->
             <image 
               wx:else 
-              src="{{currentSong.image || '/assets/images/splash-bg.png'}}" 
+              src="{{currentSong.poster || '/assets/images/default-cover.png'}}" 
               mode="aspectFit" 
+              lazy-load="true"
               class="screen-media">
             </image>
           </view>
@@ -43,7 +46,7 @@
           <!-- 歌词显示区域 (字幕式单行显示) -->
           <view class="lyrics-display subtitle-mode">
             <view class="subtitle-text" style="font-size: {{fontSize === 'small' ? '24rpx' : fontSize === 'large' ? '32rpx' : '28rpx'}}; color: {{fontColor === 'black' ? '#000000' : fontColor === 'white' ? '#ffffff' : fontColor === 'green' ? '#00ff00' : fontColor === 'blue' ? '#0088ff' : fontColor === 'red' ? '#ff0000' : '#ffd700'}}; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 2rpx 2rpx 0px {{fontColor === 'black' ? '#666666' : fontColor === 'white' ? '#cccccc' : fontColor === 'green' ? '#004400' : fontColor === 'blue' ? '#004466' : fontColor === 'red' ? '#440000' : '#665500'}}; image-rendering: pixelated; text-rendering: optimizeSpeed">
-              {{lyrics[currentLyricsIndex].text}}
+              {{lyrics[currentLyricsIndex] ? lyrics[currentLyricsIndex].text : ''}}
             </view>
           </view>
 
@@ -76,23 +79,14 @@
         <view wx:if="{{activePanel === 'speed'}}" class="panel-content active">
           <view class="panel-header">选择播放倍速</view>
           <view class="option-grid">
-            <view class="option-btn {{playbackRate === 0.5 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="0.5">
-              <text class="option-text">0.5x</text>
-            </view>
-            <view class="option-btn {{playbackRate === 0.75 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="0.75">
-              <text class="option-text">0.75x</text>
+            <view class="option-btn {{playbackRate === 0.85 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="0.85">
+              <text class="option-text">0.85x</text>
             </view>
             <view class="option-btn {{playbackRate === 1.0 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.0">
               <text class="option-text">1.0x</text>
             </view>
             <view class="option-btn {{playbackRate === 1.25 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.25">
               <text class="option-text">1.25x</text>
-            </view>
-            <view class="option-btn {{playbackRate === 1.5 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.5">
-              <text class="option-text">1.5x</text>
-            </view>
-            <view class="option-btn {{playbackRate === 1.75 ? 'selected' : ''}}" bindtap="setPlaybackRate" data-rate="1.75">
-              <text class="option-text">1.75x</text>
             </view>
           </view>
         </view>
@@ -200,30 +194,95 @@
     <view class="playlist-header">
       <view class="header-top">
         <text class="playlist-title">播放列表</text>
-        <view class="close-playlist" bindtap="togglePlaylist">✕</view>
+        <view class="header-actions">
+          <view class="reset-btn" bindtap="resetFilters">↺</view>
+          <view class="close-playlist" bindtap="togglePlaylist">✕</view>
+        </view>
       </view>
       <!-- 搜索和筛选栏 -->
       <view class="search-bar">
-        <input class="search-input" placeholder="搜索歌曲..." placeholder-class="search-placeholder" bindinput="onSearchInput" value="{{searchQuery}}" />
+        <input class="search-input" placeholder="搜索" placeholder-class="search-placeholder" bindinput="onSearchInput" value="{{searchQuery}}" />
+        <view class="dropdown-container">
+          <view class="dropdown-trigger" bindtap="toggleTypeDropdown">
+            <text class="dropdown-text">{{selectedTypeText || '选择类型'}}</text>
+          </view>
+          <view class="dropdown-list" wx:if="{{showTypeDropdown}}">
+            <view wx:for="{{typeOptions}}" wx:key="*this" class="dropdown-item {{item === selectedTypeText ? 'active' : ''}}" bindtap="selectType" data-type="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+        <view class="dropdown-container">
+          <view class="dropdown-trigger" bindtap="togglePersonDropdown">
+            <text class="dropdown-text">{{selectedPersonText || '全部人物'}}</text>
+          </view>
+          <view class="dropdown-list" wx:if="{{showPersonDropdown}}">
+            <view wx:for="{{personOptions}}" wx:key="*this" class="dropdown-item {{item === selectedPersonText ? 'active' : ''}}" bindtap="selectPerson" data-person="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+        <view class="dropdown-container">
+          <view class="dropdown-trigger" bindtap="toggleTopicDropdown">
+            <text class="dropdown-text">{{selectedTopicText || '选择专题'}}</text>
+          </view>
+          <view class="dropdown-list" wx:if="{{showTopicDropdown}}">
+            <view wx:for="{{topicOptions}}" wx:key="*this" class="dropdown-item {{item === selectedTopicText ? 'active' : ''}}" bindtap="selectTopic" data-topic="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
         <view class="filter-btn {{filterFavorite ? 'active' : ''}}" bindtap="toggleFilterFavorite">
            <view class="css-heart {{filterFavorite ? 'filled' : ''}}"></view>
         </view>
       </view>
     </view>
-    <scroll-view class="playlist-scroll" scroll-y="true">
-      <view class="song-item {{item.originalIndex === currentSongIndex ? 'playing' : ''}}"
+    <view class="playlist-body">
+      <scroll-view class="playlist-scroll" scroll-y="true" bindscrolltolower="onScrollToLower" lower-threshold="100">
+        <view class="playlist-content">
+          <view class="song-item {{item.originalIndex === currentSongIndex ? 'playing' : ''}}"
             wx:for="{{displayPlaylist}}"
             wx:key="originalIndex"
             bindtap="selectSong"
             data-index="{{item.originalIndex}}">
-        <view class="song-number">{{index + 1}}</view>
-        <view class="song-details">
-          <text class="item-title">{{item.title}}</text>
-          <text class="item-artist">{{item.artist}}</text>
-        </view>
-        <view class="song-duration">{{item.duration}}</view>
+            <view class="song-number">{{index + 1}}</view>
+            <view class="song-details">
+              <view class="title-row">
+                <view class="tags-inline" wx:if="{{item.topic || item.isVip}}">
+                  <view class="tag-badge topic-tag" wx:if="{{item.topic}}">
+                    <text class="tag-symbol">✦</text>{{item.topic}}
+                  </view>
+                  <view class="tag-badge vip-tag" wx:if="{{item.isVip}}">VIP</view>
+                </view>
+                <text class="item-title">{{item.title}}</text>
+              </view>
+              
+              <view class="song-meta">
+                <text class="meta" wx:if="{{item.type}}">{{item.type}}</text>
+                <text class="meta" wx:if="{{item.artist}}"> · {{item.artist}}</text>
+                <text class="meta" wx:if="{{item.publishDateStr}}"> · {{item.publishDateStr}}</text>
+              </view>
+            </view>
+            <view class="song-duration">{{item.duration}}</view>
+            <view class="song-actions">
+              <view class="print-btn" catchtap="openSongPrint" data-id="{{item._id}}">
+                <text class="print-icon">🖨️</text>
+              </view>
+            </view>
+          </view>
       </view>
-    </scroll-view>
+      </scroll-view>
+    </view>
   </view>
 
+</view>
+<view wx:if="{{showVipModal}}" class="vip-modal-mask">
+  <view class="vip-modal">
+    <view class="vip-title">会员专享</view>
+    <view class="vip-content">该内容为会员专享，请先开通会员</view>
+    <view class="vip-actions">
+      <button class="vip-btn cancel" bindtap="closeVipModal">我知道了</button>
+      <button class="vip-btn confirm" bindtap="goToVip">去开通</button>
+    </view>
+  </view>
 </view>

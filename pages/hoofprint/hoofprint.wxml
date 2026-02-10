@@ -1,26 +1,73 @@
 <!-- pages/hoofprint/hoofprint.wxml -->
 <!-- 背景层 -->
-<view class="background-container">
-  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
+<view class="background-container {{themeClass}}">
+  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" lazy-load="true" />
 </view>
 
-<!-- 顶部轮播区域 -->
-<view class="top-carousel">
-  <view class="carousel-badge">试读精选</view>
-  <swiper class="carousel-swiper" indicator-dots="{{true}}" autoplay="{{true}}" circular="{{true}}" interval="5000">
-    <swiper-item wx:for="{{carouselItems}}" wx:key="id">
-      <view class="carousel-card" bindtap="openCarouselArticle" data-article="{{item}}">
+
+
+<!-- 今日温柔 (Style 5: 横版画册 / 丝带书签 / 立体感) -->
+<view class="trial-section book-style {{themeClass}}" wx:if="{{dailyTendernessItem}}">
+  <view class="book-container">
+    <view class="book-wrapper">
+      
+      <!-- 丝带书签 -->
+      <view class="ribbon-badge">
+        <!-- 叶子图标 (使用 CSS mask 或 image) -->
+        <image class="ribbon-icon" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTE3IDhDOCAxMCA1LjkgMTYuMTcgMy44MiAyMS4zNCA1LjY3IDIxLjk0IDguMzQgMjEuMjggOS4zMiAyMC4zMSAxMC4wNiAxOS41NyAxMS4yOSAxNy41NiAxMi40MyAxNS4wOSAxMy42MiAxMi41MiAxNC42OCAxMC4yNyAxNyA4Wk03IDE4Ljk5QzcuMjUgMTguNTQgOS4zNiAxMy4xNSAxNSAxMCAxMS4wOCAxMi4xOCA4Ljg2IDE2LjE5IDcgMTguOTlaIiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+" />
+        <text class="ribbon-text">今日温柔</text>
+      </view>
+
+      <view class="book-spine"></view>
+      
+      <view class="book-cover">
+        <image class="book-image" src="{{dailyTendernessItem.cover || '/assets/images/default-cover.png'}}" mode="aspectFill" lazy-load="true" />
+      </view>
+      
+      <view class="book-pages-right"></view>
+
+    </view>
+  </view>
+</view>
+<!-- 陪伴尝试（试读）：复古拍立得风格 -->
+<view class="top-carousel polaroid-style {{themeClass}}">
+  <view class="carousel-inner">
+    <block wx:if="{{todayGentleList.length > 0}}">
+      <view wx:for="{{todayGentleList}}" wx:key="id"
+            class="polaroid-card {{index === currentGentleIndex ? 'active' : ''}} {{index === (currentGentleIndex + 1) % todayGentleList.length ? 'next' : ''}} {{index === (currentGentleIndex - 1 + todayGentleList.length) % todayGentleList.length ? 'prev' : ''}}"
+            bindtap="openArticleDetail"
+            data-article="{{item}}"
+            data-card-type="main"
+            data-card-index="0">
+        
+        <!-- 标签：像贴纸一样 -->
+        <view class="tag-badge">
+          <view class="badge-icon gentle-icon">
+            <!-- 书本图标 (SVG base64) -->
+            <image class="badge-svg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjNWU1MDNmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIgM2g2YTQgNCAwIDAgMSA0IDR2MTRhMyAzIDAgMCAwLTMtM0gyeiIgZmlsbD0iIzVlNTAzZiIvPjxwYXRoIGQ9Ik0yMiAzaC02YTQgNCAwIDAgMC00IDR2MTRhMyAzIDAgMCAxIDMtM0gyMnoiIGZpbGw9Im5vbmUiLz48L3N2Zz4=" mode="aspectFit" />
+          </view>
+          <text class="badge-text">陪伴尝试</text>
+        </view>
+
         <image class="card-bg" src="{{item.cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
         <view class="card-overlay">
-          <text class="card-title">{{item.title}}</text>
+          <!-- <text class="card-title">{{item.titleCn}}</text> -->
         </view>
       </view>
-    </swiper-item>
-  </swiper>
+    </block>
+    <view wx:else class="empty-tip">暂无陪伴尝试</view>
+  </view>
+  
+  <!-- 导航按钮 -->
+  <view class="nav-btn prev" catchtap="handlePrevSlide" wx:if="{{todayGentleList.length > 1}}">
+    <text class="nav-arrow">{{'<'}}</text>
+  </view>
+  <view class="nav-btn next" catchtap="handleNextSlide" wx:if="{{todayGentleList.length > 1}}">
+    <text class="nav-arrow">{{'>'}}</text>
+  </view>
 </view>
-
-<!-- 筛选控件 -->
-<view class="filter-container">
+<!-- 筛选第一控件 -->
+<view class="filter-container {{themeClass}}">
   <view class="filter-row">
     <!-- 日期部分 -->
     <view class="filter-item">
@@ -56,29 +103,18 @@
   </view>
 </view>
 
+
+
 <!-- 时间线容器 -->
-<view class="timeline-container">
-  <view class="difficulty-container">
-    <view class="filter-row">
-      <view class="filter-item">
-        <text class="filter-label">难度</text>
-        <view class="filter-separator"></view>
-        <view class="difficulty-segment">
-          <view class="segment-btn {{selectedDifficulty === '全部' ? 'active' : ''}}" bindtap="selectDifficulty" data-difficulty="全部">全部</view>
-          <view class="segment-btn {{selectedDifficulty === '低难度' ? 'active' : ''}}" bindtap="selectDifficulty" data-difficulty="低难度">低难度</view>
-          <view class="segment-btn {{selectedDifficulty === '高难度' ? 'active' : ''}}" bindtap="selectDifficulty" data-difficulty="高难度">高难度</view>
-        </view>
-      </view>
-    </view>
-  </view>
+  <view class="timeline-container {{themeClass}}">
   <!-- 时间线主轴 -->
   <view class="timeline-axis"></view>
 
   <!-- 时间线节点 -->
-  <view class="timeline-nodes">
-    <view class="timeline-node" wx:for="{{filteredTimelineData}}" wx:key="date">
+      <view class="timeline-nodes">
+    <view class="timeline-node" wx:for="{{displayFilteredTimelineData}}" wx:key="date">
       <view class="node-date">
-        <image class="date-decoration" src="/assets/images/日期前小羊.png" mode="aspectFit" />
+        <image class="date-decoration" src="/assets/images/日期前小羊.png" mode="aspectFit" lazy-load="true" />
         <text class="date-text">{{item.date}}</text>
       </view>
 
@@ -86,9 +122,9 @@
         <view class="film-card small-card" wx:if="{{item.articles.length > 0}}" bindtap="openArticleDetail" data-article="{{item.articles[0]}}" data-date="{{item.date}}" data-card-type="small" data-card-index="1">
           <view class="film-texture"></view>
           <view class="card-cover">
-          <image class="cover-image" src="{{item.articles[0].cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
+          <image class="cover-image" src="{{item.articles[0].smallCover || item.articles[0].cover || '/assets/images/default-cover.png'}}" mode="aspectFill" lazy-load="true" />
             <view class="card-bar">
-              <text class="card-bar-text">{{item.articles[0].subtitle || item.articles[0].titleCn}}</text>
+              <text class="card-bar-text">弹走烦恼，春暖花开</text>
             </view>
           </view>
         </view>
@@ -96,7 +132,7 @@
         <view class="film-card main-card" wx:if="{{item.articles.length > 0}}" bindtap="openArticleDetail" data-article="{{item.articles[0]}}" data-date="{{item.date}}" data-card-type="main" data-card-index="0">
           <view class="film-texture"></view>
           <view class="card-cover">
-          <image class="cover-image" src="{{item.articles[0].cover || '/assets/images/default-cover.png'}}" mode="aspectFill" />
+          <image class="cover-image" src="{{item.articles[0].cover || '/assets/images/default-cover.png'}}" mode="aspectFill" lazy-load="true" />
             <view class="card-bar">
               <text class="card-bar-text">{{item.articles[0].titleCn}}</text>
             </view>

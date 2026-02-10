@@ -1,0 +1,359 @@
+.weekly-container {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  padding-top: 60rpx;
+  padding-bottom: 40rpx;
+}
+
+.page-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.report-card {
+  position: relative;
+  z-index: 1;
+  width: 690rpx;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 32rpx;
+  padding: 28rpx 30rpx;
+  box-shadow: 0 16rpx 40rpx rgba(34, 139, 34, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  /* 卡片本身只做淡入，内容逐个上滑 */
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 逐个显示的动画类 */
+.animate-item {
+  opacity: 0; /* 初始不可见 */
+  animation: fadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* 延迟设置 */
+.card-header    { animation-delay: 0.2s; }
+.title-section  { animation-delay: 0.4s; }
+.stats-grid     { animation-delay: 0.6s; } /* 如果想整体一起出就放这里，如果想一个个出就改下面 */
+/* .stat-box在wxml里还没加类，我们可以用 nth-child 来控制 */
+.stat-box:nth-child(1) { animation-delay: 0.6s; }
+.stat-box:nth-child(2) { animation-delay: 0.7s; }
+.stat-box:nth-child(3) { animation-delay: 0.8s; }
+.stat-box:nth-child(4) { animation-delay: 0.9s; }
+
+.summary-paper  { animation-delay: 1.1s; }
+.footer-actions { animation-delay: 1.3s; }
+
+/* 头部 */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  position: relative;
+}
+
+.avatar-box {
+  position: relative;
+}
+
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  border: 4rpx solid #fff;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
+}
+
+.header-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.greeting {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.sub-greeting {
+  font-size: 24rpx;
+  color: #666;
+  font-style: italic;
+}
+
+.date-badge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  padding: 8rpx 20rpx;
+  border-radius: 30rpx 0 0 30rpx;
+  margin-right: -40rpx; /* 贴边效果 */
+  box-shadow: -2rpx 4rpx 10rpx rgba(255, 154, 158, 0.3);
+}
+
+.week-keyword {
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 2rpx;
+}
+
+/* 标题区 */
+.title-section {
+  text-align: center;
+  margin-bottom: 6rpx;
+}
+
+.main-title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #2e8b57;
+  letter-spacing: 2rpx;
+  margin-bottom: 8rpx;
+}
+
+.date-range {
+  font-size: 24rpx;
+  color: #999;
+  background: #f0fdf4;
+  padding: 4rpx 16rpx;
+  border-radius: 12rpx;
+}
+
+/* 核心数据 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.stat-box {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 12rpx;
+  border-radius: 24rpx;
+  transition: all 0.2s;
+}
+
+.stat-box:active {
+  transform: scale(0.98);
+}
+
+.login-box { background: #e8f5e9; }
+.music-box { background: #e3f2fd; }
+.read-box { background: #fff3e0; }
+.medal-box { background: #f3e5f5; }
+.parent-box { background: #e0f7fa; }
+.goal-box { background: #fce4ec; }
+
+.stat-icon-bg {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 20rpx;
+  background: rgba(255,255,255,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-val {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #333;
+  line-height: 1;
+  margin-bottom: 6rpx;
+}
+
+.stat-unit {
+  font-size: 24rpx;
+  font-weight: normal;
+  color: #666;
+  margin-left: 4rpx;
+}
+
+.stat-name {
+  font-size: 22rpx;
+  color: #777;
+}
+
+/* 总结信笺 */
+.summary-paper {
+  position: relative;
+  background: #fffdf5;
+  border: 2rpx dashed #e0e0e0;
+  border-radius: 20rpx;
+  padding: 16rpx;
+  margin-top: 20rpx;
+}
+
+.paper-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2rpx;
+  background: repeating-linear-gradient(to right, #f0f0f0 0, #f0f0f0 10rpx, transparent 10rpx, transparent 20rpx);
+}
+.paper-line:nth-child(1) { top: 30%; }
+.paper-line:nth-child(2) { top: 60%; }
+.paper-line:nth-child(3) { top: 90%; }
+
+.summary-content {
+  position: relative;
+  z-index: 2;
+  font-size: 28rpx;
+  color: #555;
+  line-height: 1.8;
+  text-align: justify;
+}
+
+.summary-paragraph { margin-bottom: 8rpx; }
+
+.stat-css-icon {
+  display: inline-block;
+}
+
+.icon-read-book {
+  width: 36rpx;
+  height: 44rpx;
+  background-color: #795548;
+  border-radius: 4rpx 8rpx 8rpx 4rpx;
+  position: relative;
+  box-shadow: inset 6rpx 0 0 rgba(0,0,0,0.15);
+}
+
+.icon-read-book::after {
+  content: '';
+  position: absolute;
+  top: 8rpx;
+  left: 10rpx;
+  right: 6rpx;
+  height: 4rpx;
+  background: rgba(255,255,255,0.4);
+  box-shadow: 0 10rpx 0 rgba(255,255,255,0.4), 0 20rpx 0 rgba(255,255,255,0.4);
+}
+
+.icon-small-goal {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 4rpx solid #f44336;
+  position: relative;
+}
+
+.icon-small-goal::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16rpx;
+  height: 16rpx;
+  background: #f44336;
+  border-radius: 50%;
+}
+
+.css-icon {
+  display: inline-block;
+  width: 20rpx;
+  height: 20rpx;
+  margin-right: 14rpx;
+  vertical-align: middle;
+  position: relative;
+  top: -2rpx;
+}
+
+.icon-time {
+  background-color: #4caf50;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4rpx rgba(76, 175, 80, 0.25);
+}
+
+.icon-medal {
+  background-color: #ab47bc;
+  border-radius: 50%;
+  border: 4rpx solid #e1bee7;
+  box-sizing: border-box;
+}
+
+.icon-task {
+  background-color: #03a9f4;
+  border-radius: 6rpx;
+  transform: rotate(0deg);
+}
+
+.icon-mail {
+  background-color: #ff80ab;
+  border-radius: 4rpx 12rpx 4rpx 12rpx;
+  transform: rotate(-10deg);
+}
+
+.summary-footer {
+  margin-top: 8rpx;
+  text-align: right;
+  font-size: 26rpx;
+  color: #888;
+  position: relative;
+  padding-right: 20rpx;
+}
+
+.footer-text{
+  margin-right: 50rpx;
+}
+
+.stamp {
+  position: absolute;
+  right: -30rpx;
+  bottom: -20rpx;
+  width: 100rpx;
+  height: 100rpx;
+  opacity: 0.8;
+  transform: rotate(-15deg);
+}
+
+/* 底部按钮 */
+.footer-actions {
+  margin-top: 8rpx;
+}
+
+.share-btn {
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  box-shadow: 0 8rpx 20rpx rgba(79, 172, 254, 0.4);
+  border: none;
+}
+.share-btn::after { border: none; }

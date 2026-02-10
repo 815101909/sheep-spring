@@ -1,0 +1,13 @@
+<view class="print-container">
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+  <view class="print-content">
+    <view class="a4-stack">
+      <view class="a4-paper" wx:for="{{printImages}}" wx:key="*this">
+        <image class="print-image" src="{{item || ''}}" mode="widthFix" bindtap="previewImage" data-url="{{item}}" />
+      </view>
+    </view>
+  </view>
+  
+  <!-- 用于合成图片的隐藏 Canvas -->
+  <canvas type="2d" id="printCanvas" style="position: absolute; left: -9999px; top: -9999px; width: 1000px; height: 1000px;"></canvas>
+</view>

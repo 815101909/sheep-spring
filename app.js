@@ -1,4 +1,19 @@
 // app.js
+const reminderManager = require('./utils/reminderManager')
+const themeManager = require('./utils/themeManager')
+
+const __originPage__ = Page;
+Page = function (config) {
+  const originalOnShow = config.onShow;
+  config.onShow = function () {
+    themeManager.applyToPage(this);
+    if (typeof originalOnShow === 'function') {
+      return originalOnShow.apply(this, arguments);
+    }
+  };
+  return __originPage__(config);
+};
+
 App({
   onLaunch: function () {
     if (!wx.cloud) {
@@ -15,15 +30,31 @@ App({
     }
 
     this.globalData = {};
+    this.globalData.bgmSuppressed = false;
+    themeManager.init();
 
     // 初始化背景音乐
     this.initBGM();
+    reminderManager.checkAndNotify()
+    if (!this._reminderTicker) {
+      this._reminderTicker = setInterval(() => {
+        reminderManager.checkAndNotify()
+      }, 30000)
+    }
   },
 
   onShow: function() {
+      // 立即检查一次，确保在任意页面也能触发提醒弹窗
+      reminderManager.checkAndNotify()
+      themeManager.applyTheme();
       const bgmEnabled = wx.getStorageSync('backgroundMusicEnabled');
       const globalMgr = wx.getBackgroundAudioManager();
-      if (bgmEnabled !== false && !(globalMgr && !globalMgr.paused && globalMgr.src)) {
+      const suppressed = !!(this.globalData && this.globalData.bgmSuppressed);
+      const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+      const top = (pages && pages.length > 0) ? pages[pages.length - 1] : null;
+      const route = top && top.route ? String(top.route) : '';
+      const onMusicPage = /pages\/music\/music$/.test(route);
+      if (bgmEnabled !== false && !suppressed && !(globalMgr && !globalMgr.paused && globalMgr.src) && !onMusicPage) {
           if (!this.bgm || !this.bgm.src || this.bgm.paused) {
               this.playBGM();
           }
@@ -46,7 +77,7 @@ App({
     this.bgm = wx.createInnerAudioContext();
     this.bgm.loop = true; // 循环播放
     this.bgm.volume = 0.05; // 降低音量
-    this.bgm.autoplay = true;
+    this.bgm.autoplay = false;
     
     // 设置不遵循静音开关，确保在静音模式下也能播放（根据需求，通常背景音乐可以遵循，但如果为了稳定播放，设为false）
     if (wx.setInnerAudioOption) {
@@ -65,7 +96,8 @@ App({
     // 自动播放处理：如果自动播放被浏览器策略拦截，需要用户交互后再次尝试
     this.bgm.onCanplay(() => {
         const enabled = wx.getStorageSync('backgroundMusicEnabled');
-        if (enabled !== false && this.bgm && this.bgm.src && this.bgm.paused) {
+        const suppressed = !!(this.globalData && this.globalData.bgmSuppressed);
+        if (enabled !== false && !suppressed && this.bgm && this.bgm.src && this.bgm.paused) {
             this.bgm.play();
         }
     });
@@ -77,11 +109,20 @@ App({
     }
   },
 
-  playBGM: async function() {
+  playBGM: async function(allowOnMusicPage) {
       if (!this.bgm) return;
       
       const bgmEnabled = wx.getStorageSync('backgroundMusicEnabled');
       if (bgmEnabled === false) return;
+      if (this.globalData && this.globalData.bgmSuppressed) return;
+      
+      try {
+        const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+        const top = (pages && pages.length > 0) ? pages[pages.length - 1] : null;
+        const route = top && top.route ? String(top.route) : '';
+        const onMusicPage = /pages\/music\/music$/.test(route);
+        if (onMusicPage && !allowOnMusicPage) return;
+      } catch (_){}
       
       // 检查是否有其他音频（BackgroundAudioManager）正在播放
       const globalMgr = wx.getBackgroundAudioManager();
@@ -98,7 +139,17 @@ App({
           this.bgm.src = this.bgmRealUrl;
           this.bgm.play();
           setTimeout(() => {
-              if (this.bgm && this.bgm.paused) this.bgm.play();
+              const suppressed = !!(this.globalData && this.globalData.bgmSuppressed);
+              const en = wx.getStorageSync('backgroundMusicEnabled');
+              if (en === false || suppressed) return;
+              try {
+                const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+                const top = (pages && pages.length > 0) ? pages[pages.length - 1] : null;
+                const route = top && top.route ? String(top.route) : '';
+                const onMusicPage = /pages\/music\/music$/.test(route);
+                if (onMusicPage && !allowOnMusicPage) return;
+              } catch (_){}
+              if (this.bgm && this.bgm.src && this.bgm.paused) this.bgm.play();
           }, 200);
       } else {
           try {
@@ -122,7 +173,17 @@ App({
                   this.bgm.src = this.bgmRealUrl;
                   this.bgm.play();
                   setTimeout(() => {
-                      if (this.bgm && this.bgm.paused) this.bgm.play();
+                      const suppressed = !!(this.globalData && this.globalData.bgmSuppressed);
+                      const en2 = wx.getStorageSync('backgroundMusicEnabled');
+                      if (en2 === false || suppressed) return;
+                      try {
+                        const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+                        const top = (pages && pages.length > 0) ? pages[pages.length - 1] : null;
+                        const route = top && top.route ? String(top.route) : '';
+                        const onMusicPage = /pages\/music\/music$/.test(route);
+                        if (onMusicPage && !allowOnMusicPage) return;
+                      } catch (_){}
+                      if (this.bgm && this.bgm.src && this.bgm.paused) this.bgm.play();
                   }, 200);
               }
           } catch (err) {
@@ -136,6 +197,16 @@ App({
           this.bgm.pause();
       }
   },
+  suppressBGM: function() {
+      if (!this.globalData) this.globalData = {};
+      this.globalData.bgmSuppressed = true;
+      this.stopBGM();
+  },
+  releaseBGM: function() {
+      if (!this.globalData) this.globalData = {};
+      this.globalData.bgmSuppressed = false;
+  },
+  _reminderTicker: null,
 
   // 这里的 _doPlay 不再需要，因为 InnerAudioContext 逻辑不同，但为了兼容性可以留空或删除
   _doPlay: function(url) {

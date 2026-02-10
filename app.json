@@ -4,18 +4,26 @@
     "pages/music/music",
     "pages/hoofprint/hoofprint",
     "pages/article-detail/article-detail",
+    "pages/medals/medals",
+    "pages/print/print",
+    "pages/music-print/music-print",
     "pages/login/login",
     "pages/profile/profile",
     "pages/checkin/checkin",
     "pages/vip/vip",
     "pages/collection/collection",
-    "pages/service/service"
+    "pages/service/service",
+    "pages/weekly-report/weekly-report"
   ],
+  "darkmode": true,
+  "themeLocation": "theme.json",
   "window": {
-    "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#fff",
+    "backgroundTextStyle": "@bgTextStyle",
+    "backgroundColorTop": "@bgColorTop",
+    "backgroundColorBottom": "@bgColorBottom",
+    "navigationBarBackgroundColor": "@navBg",
     "navigationBarTitleText": "春日扬帆",
-    "navigationBarTextStyle": "black"
+    "navigationBarTextStyle": "@navTextStyle"
   },
   "requiredBackgroundModes": ["audio"],
   "plugins": {
@@ -48,4 +56,3 @@
     ]
   }
 }
-

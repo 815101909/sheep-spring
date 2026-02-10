@@ -1,4 +1,5 @@
 // pages/profile/profile.js
+const themeManager = require('../../utils/themeManager');
 Page({
   data: {
     currentAvatar: '',
@@ -9,18 +10,43 @@ Page({
     backgroundMusicEnabled: true, // 背景音乐开关状态
     isEditingName: false, // 是否正在编辑用户名
     tempUserName: '', // 临时用户名
-    avatarList: []
+    avatarList: [],
+    themeOptions: ['跟随系统', '浅色', '深色'],
+    themeModeIndex: 0,
+    themeModeLabel: '跟随系统'
   },
 
   onLoad: function (options) {
     this.loadUserInfo();
     this.loadAvatarChoices();
+    this.loadThemeMode();
   },
 
   onShow: function () {
     // 每次显示页面时刷新数据
     this.loadUserInfo();
     this.loadAvatarChoices();
+    themeManager.applyToPage(this);
+    this.loadThemeMode();
+  },
+  
+  loadThemeMode: function () {
+    const mode = themeManager.getMode();
+    const idx = mode === 'light' ? 1 : (mode === 'dark' ? 2 : 0);
+    const label = this.data.themeOptions[idx] || '跟随系统';
+    this.setData({ themeModeIndex: idx, themeModeLabel: label });
+  },
+  
+  onThemeModeChange: function (e) {
+    const idx = Number(e.detail.value) || 0;
+    const mode = idx === 1 ? 'light' : (idx === 2 ? 'dark' : 'system');
+    this.setData({
+      themeModeIndex: idx,
+      themeModeLabel: this.data.themeOptions[idx] || '跟随系统'
+    });
+    themeManager.setMode(mode);
+    themeManager.applyToPage(this);
+    themeManager.applyTheme();
   },
 
   // 加载用户信息（资料头像来自 springuser.avatarUrl）

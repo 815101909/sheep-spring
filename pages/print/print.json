@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "打印预览",
+  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": false,
+  "usingComponents": {}
+}
+

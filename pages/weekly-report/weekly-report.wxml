@@ -1,0 +1,129 @@
+<view class="weekly-container">
+  <image class="page-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+  
+  <view class="report-card">
+    <!-- 头部区域：头像、问候语 -->
+    <view class="card-header animate-item">
+      <view class="avatar-box">
+        <image class="avatar" src="{{userInfo.avatarUrl || '/assets/images/小卡片默认形象.png'}}" mode="aspectFill" />
+      </view>
+      <view class="header-text">
+        <text class="greeting">Hi {{userInfo.name}}，见信如晤</text>
+        <text class="sub-greeting">{{greeting}}</text>
+      </view>
+      <view class="date-badge">
+        <text class="week-keyword">{{keyword}}</text>
+      </view>
+    </view>
+
+    <!-- 标题区域 -->
+    <view class="title-section animate-item">
+      <text class="main-title">本周成长报告</text>
+      <text class="date-range">{{weekRangeText}}</text>
+    </view>
+
+    <!-- 核心数据网格 -->
+    <view class="stats-grid">
+      <!-- 登录天数 -->
+      <view class="stat-box login-box animate-item">
+        <view class="stat-icon-bg">
+          <image class="stat-icon" src="/assets/images/日历.png" mode="aspectFit" />
+        </view>
+        <view class="stat-content">
+          <text class="stat-val">{{loginDaysThisWeek}}<text class="stat-unit">天</text></text>
+          <text class="stat-name">陪伴时光</text>
+        </view>
+      </view>
+
+      <!-- 收听数量 -->
+      <view class="stat-box music-box animate-item">
+        <view class="stat-icon-bg">
+          <image class="stat-icon" src="/assets/images/music.png" mode="aspectFit" />
+        </view>
+        <view class="stat-content">
+          <text class="stat-val">{{listenedCountThisWeek}}<text class="stat-unit">首</text></text>
+          <text class="stat-name">收听治愈</text>
+        </view>
+      </view>
+
+      <!-- 阅读数量 -->
+      <view class="stat-box read-box animate-item">
+        <view class="stat-icon-bg">
+          <view class="stat-css-icon icon-read-book"></view>
+        </view>
+        <view class="stat-content">
+          <text class="stat-val">{{readCountThisWeek}}<text class="stat-unit">篇</text></text>
+          <text class="stat-name">阅读成长</text>
+        </view>
+      </view>
+
+      <!-- 新获勋章 -->
+      <view class="stat-box medal-box animate-item">
+        <view class="stat-icon-bg">
+          <image class="stat-icon" src="/assets/images/勋章墙.png" mode="aspectFit" />
+        </view>
+        <view class="stat-content">
+          <text class="stat-val">{{medalsThisWeek}}<text class="stat-unit">枚</text></text>
+          <text class="stat-name">新获勋章</text>
+        </view>
+      </view>
+
+      <!-- 亲子任务 -->
+      <view class="stat-box parent-box animate-item">
+        <view class="stat-icon-bg">
+          <image class="stat-icon" src="/assets/images/会员.png" mode="aspectFit" />
+        </view>
+        <view class="stat-content">
+          <text class="stat-val">{{parentTaskCount}}<text class="stat-unit">个</text></text>
+          <text class="stat-name">亲子任务</text>
+        </view>
+      </view>
+
+      <!-- 小目标 -->
+      <view class="stat-box goal-box animate-item">
+        <view class="stat-icon-bg">
+          <view class="stat-css-icon icon-small-goal"></view>
+        </view>
+        <view class="stat-content">
+          <text class="stat-val">{{smallGoalCount}}<text class="stat-unit">个</text></text>
+          <text class="stat-name">小目标</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 总结信笺 -->
+    <view class="summary-paper animate-item">
+      <view class="paper-line"></view>
+      <view class="paper-line"></view>
+      <view class="paper-line"></view>
+      
+      <view class="summary-content">
+        <view class="summary-paragraph">
+          <view class="css-icon icon-time"></view>
+          <text>这一周，我们一起度过了 {{loginDaysThisWeek}} 天的温暖时光。你沉浸在 {{listenedCountThisWeek}} 首旋律中，也在 {{readCountThisWeek}} 篇卡片里寻找力量。</text>
+        </view>
+        <view class="summary-paragraph" wx:if="{{medalsThisWeek > 0}}">
+          <view class="css-icon icon-medal"></view>
+          <text>恭喜你获得了 {{medalsThisWeek}} 枚新勋章，这是成长的印记。</text>
+        </view>
+        <view class="summary-paragraph" wx:if="{{parentTaskCount > 0 || smallGoalCount > 0}}">
+          <view class="css-icon icon-task"></view>
+          <text>你完成了 {{parentTaskCount}} 个亲子任务，实现了 {{smallGoalCount}} 个小目标，每一步都算数。</text>
+        </view>
+        <view class="summary-paragraph" wx:if="{{longestMailbox}}">
+          <view class="css-icon icon-mail"></view>
+          <text>{{longestMailboxDate}}那天，你在信箱留下了最长的心语：“{{longestMailbox}}”</text>
+        </view>
+        <view class="summary-footer">
+          <text class="footer-text">—— 你的春小咩</text>
+          <image class="stamp" src="/assets/images/小绵羊.png" mode="aspectFit" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部按钮 -->
+    <view class="footer-actions animate-item">
+      <button class="share-btn" open-type="share">分享我的春天</button>
+    </view>
+  </view>
+</view>

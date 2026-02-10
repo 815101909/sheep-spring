@@ -81,11 +81,15 @@ exports.main = async (event, context) => {
         recommender: event.recommender || '', // 推荐人
         
         
-        createTime: db.serverDate(),
-        updateTime: db.serverDate(),
+        createTime: Date.now(),
+        updateTime: Date.now(),
         // 如果前端传来了其他用户信息，合并进去
         ...(event.userInfo || {})
       }
+      const bonusDays = 3
+      const expireTime = Date.now() + bonusDays * 24 * 60 * 60 * 1000
+      userData.isVip = true
+      userData.vipExpireTime = expireTime
       
       const addRes = await db.collection(collectionName).add({
         data: userData

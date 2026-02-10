@@ -1,5 +1,7 @@
 // pages/garden/garden.js
 const favoriteManager = require('../../utils/favoriteManager');
+const GARDEN_CACHE_KEY = 'spring_garden_cache';
+const GARDEN_CACHE_TTL = 10 * 60 * 1000;
 
 Page({
   data: {
@@ -19,6 +21,8 @@ Page({
     vipExpiry: '2024-12-31', // 会员到期时间
     audioCount: 0,      // 随身听数量
     cardCount: 0,        // 成长卡数量
+    medalCount: 0,
+    medalThumbs: [],
     showAboutModal: false, // 关于我们模态框显示状态
     
     // 烦恼泡泡相关数据
@@ -50,7 +54,35 @@ Page({
     ,showSoundStarter: false
   },
 
+  _readGardenCache: function () {
+    try {
+      const c = wx.getStorageSync(GARDEN_CACHE_KEY) || null;
+      if (!c || !c.savedAt) return null;
+      if (Date.now() - Number(c.savedAt) > GARDEN_CACHE_TTL) return null;
+      return c.data || null;
+    } catch (_) { return null; }
+  },
+  applyGardenCache: function () {
+    const d = this._readGardenCache();
+    if (!d) return;
+    const p = {};
+    if (typeof d.checkinDays === 'number') p.checkinDays = d.checkinDays;
+    if (typeof d.unlockedImages === 'number') p.unlockedImages = d.unlockedImages;
+    if (typeof d.isVip === 'boolean') p.isVip = d.isVip;
+    if (typeof d.vipExpiry === 'string') p.vipExpiry = d.vipExpiry;
+    if (typeof d.medalCount === 'number') p.medalCount = d.medalCount;
+    if (Object.keys(p).length) this.setData(p);
+  },
+  _mergeGardenCache: function (update) {
+    try {
+      const ex = wx.getStorageSync(GARDEN_CACHE_KEY) || {};
+      const data = Object.assign({}, ex.data || {}, update || {});
+      wx.setStorageSync(GARDEN_CACHE_KEY, { data, savedAt: Date.now() });
+    } catch (_) {}
+  },
+
   onLoad: function (options) {
+    this.applyGardenCache();
     this.loadUserInfo();
     this.loadCheckinStats();
     this.checkAndCancelVipIfExpired();
@@ -58,6 +90,7 @@ Page({
   },
 
   onShow: function () {
+    this.applyGardenCache();
     // 每次进入页面自动记录访问天数（不需要登录账号）
     this.recordLoginDay();
     
@@ -66,6 +99,7 @@ Page({
     this.loadCheckinStats();
     this.checkAndCancelVipIfExpired();
     this.updateCollectionStats();
+    this.loadMedals();
 
     const enabled = wx.getStorageSync('backgroundMusicEnabled');
     const started = wx.getStorageSync('soundStarted');
@@ -111,6 +145,8 @@ Page({
    * 加载用户信息
    */
   loadUserInfo: async function () {
+    const cachedAvatar = wx.getStorageSync('currentAvatar') || '';
+    if (cachedAvatar) this.setData({ currentAvatar: cachedAvatar });
     const isLoggedIn = wx.getStorageSync('isLoggedIn') || false;
     const userName = wx.getStorageSync('userName') || '';
     const info = wx.getStorageSync('userInfo') || {};
@@ -165,6 +201,7 @@ Page({
     userInfo.readCount = this.getReadCount();
 
     this.setData({ userInfo, isLoggedIn, currentAvatar });
+    if (currentAvatar) wx.setStorageSync('currentAvatar', currentAvatar);
   },
 
   /**
@@ -214,6 +251,32 @@ Page({
     this.setData({ currentAvatar: url });
     wx.setStorageSync('currentAvatar', url);
   },
+  
+  openMedalWall: function () {
+    wx.navigateTo({ url: '/pages/medals/medals' });
+  },
+  
+  loadMedals: async function() {
+    try {
+      const user = wx.getStorageSync('userInfo') || {};
+      const uid = user && user.userId ? user.userId : '';
+      if (!uid) {
+        this.setData({ medalCount: 0, medalThumbs: [] });
+        this._mergeGardenCache({ medalCount: 0 });
+        return;
+      }
+      const c1 = new wx.cloud.Cloud({ resourceAppid: 'wx85d92d28575a70f4', resourceEnv: 'cloud1-1gsyt78b92c539ef' });
+      await c1.init();
+      const db = c1.database();
+      const countRes = await db.collection('spring_user_medals').where({ userId: uid }).count();
+      const total = (countRes && typeof countRes.total === 'number') ? countRes.total : 0;
+      this.setData({ medalCount: total, medalThumbs: [] });
+      this._mergeGardenCache({ medalCount: total });
+    } catch (e) {
+      this.setData({ medalCount: 0, medalThumbs: [] });
+      this._mergeGardenCache({ medalCount: 0 });
+    }
+  },
 
   loadCheckinStats: async function () {
     try {
@@ -237,6 +300,7 @@ Page({
         } catch (e2) {}
       }
     this.setData({ checkinDays: checkDays, unlockedImages: unlockedCnt });
+    this._mergeGardenCache({ checkinDays: checkDays, unlockedImages: unlockedCnt });
   } catch (e) {}
   },
 
@@ -269,6 +333,10 @@ Page({
       const r = ret.result || {};
       const expiryStr = r.vipExpireTime ? this.formatVipExpiry(r.vipExpireTime) : '';
       this.setData({ isVip: !!r.isVip, vipExpiry: expiryStr });
+      try {
+        wx.setStorageSync('isVip', !!r.isVip);
+        wx.setStorageSync('vipExpiry', expiryStr);
+      } catch (_) {}
     } catch (e) {}
   },
 
@@ -285,16 +353,26 @@ Page({
       const notifiedTs = Number(wx.getStorageSync(noticeKey)) || 0;
       if (expired) {
         this.setData({ isVip: false, vipExpiry: '' });
+        try {
+          wx.setStorageSync('isVip', false);
+          wx.removeStorageSync('vipExpiry');
+        } catch (_) {}
         if (!notifiedTs || notifiedTs !== expireTs) {
           wx.showToast({ title: '会员已过期，已取消', icon: 'none' });
           wx.setStorageSync(noticeKey, expireTs);
         }
+        this._mergeGardenCache({ isVip: false, vipExpiry: '' });
     } else {
       const expiryStr = expireTs ? this.formatVipExpiry(expireTs) : '';
       this.setData({ isVip: !!r.isVip, vipExpiry: expiryStr });
+      try {
+        wx.setStorageSync('isVip', !!r.isVip);
+        wx.setStorageSync('vipExpiry', expiryStr);
+      } catch (_) {}
       if (expireTs && expireTs > nowTs && notifiedTs && notifiedTs !== expireTs) {
         wx.removeStorageSync(noticeKey);
       }
+      this._mergeGardenCache({ isVip: !!r.isVip, vipExpiry: expiryStr });
     }
     } catch (e) {}
   },
@@ -327,7 +405,11 @@ Page({
    * 记录登录天数
    */
   recordLoginDay: function () {
-    const today = new Date().toDateString();
+    const dt = new Date();
+    const y = dt.getFullYear();
+    const m = this._pad2(dt.getMonth() + 1);
+    const d = this._pad2(dt.getDate());
+    const today = `${y}/${m}/${d}`;
     let loginRecords = wx.getStorageSync('loginRecords') || [];
 
     // 检查今天是否已经记录过
@@ -351,13 +433,38 @@ Page({
    * 点击悬浮形象
    */
   onCharacterTap: function () {
-    // 触发波动动画（通过添加CSS类实现）
-    // 这里可以添加更多的交互逻辑
-    wx.showToast({
-      title: '点击了小绵羊！',
-      icon: 'none',
-      duration: 1500
-    });
+    getApp().playClickSound && getApp().playClickSound();
+    const now = new Date();
+    if (!(now.getDay() === 1 && now.getHours() >= 9)) {
+      wx.showToast({ title: '每周一上午9点开放周报', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/weekly-report/weekly-report' });
+  },
+
+  _pad2: function (n) {
+    return n < 10 ? ('0' + n) : String(n);
+  },
+
+  _getWeekMondayStr: function (d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = x.getDay();
+    const diffSinceMonday = (day + 6) % 7;
+    x.setDate(x.getDate() - diffSinceMonday);
+    const y = x.getFullYear();
+    const m = this._pad2(x.getMonth() + 1);
+    const dd = this._pad2(x.getDate());
+    return `${y}-${m}-${dd}`;
+  },
+  _getPrevWeekMondayStr: function (d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = x.getDay();
+    const diffSinceMonday = (day + 6) % 7;
+    x.setDate(x.getDate() - diffSinceMonday - 7);
+    const y = x.getFullYear();
+    const m = this._pad2(x.getMonth() + 1);
+    const dd = this._pad2(x.getDate());
+    return `${y}-${m}-${dd}`;
   },
 
   /**
@@ -435,10 +542,18 @@ Page({
    * 气泡拖动开始
    */
   onBubbleTouchStart: function(e) {
-    // 记录开始触摸的坐标和状态
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
     this._bubbleStartX = e.touches[0].clientX;
     this._bubbleStartY = e.touches[0].clientY;
     this._hasMoved = false; // 重置移动标记
+    this._prevX = this._bubbleStartX;
+    this._prevY = this._bubbleStartY;
+    this._prevTime = e.timeStamp;
+    this._vx = 0;
+    this._vy = 0;
 
     this.setData({
       isDraggingBubble: true,
@@ -453,8 +568,10 @@ Page({
   onBubbleTouchMove: function(e) {
     if (!this.data.isDraggingBubble) return;
     
-    const dx = e.touches[0].clientX - this._bubbleStartX;
-    const dy = e.touches[0].clientY - this._bubbleStartY;
+    const curX = e.touches[0].clientX;
+    const curY = e.touches[0].clientY;
+    const dx = curX - this._bubbleStartX;
+    const dy = curY - this._bubbleStartY;
 
     // 如果尚未确认为移动，检查是否超过阈值
     if (!this._hasMoved) {
@@ -471,16 +588,10 @@ Page({
     let newTop = this.data.initialBubbleTop + dy;
     
     // 边界限制 (使用 wx.getWindowInfo 替代 deprecated API)
-    let windowInfo;
-    try {
-        windowInfo = wx.getWindowInfo();
-    } catch (error) {
-        // Fallback for older versions if needed
-        windowInfo = wx.getSystemInfoSync();
-    }
+    const windowInfo = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : { windowWidth: 375, windowHeight: 667 };
     const windowWidth = windowInfo.windowWidth;
     const windowHeight = windowInfo.windowHeight;
-    const bubbleSize = 60; // 假设气泡大概大小 px
+    const bubbleSize = Math.round(windowWidth * 110 / 750);
     
     if (newLeft < 0) newLeft = 0;
     if (newLeft > windowWidth - bubbleSize) newLeft = windowWidth - bubbleSize;
@@ -491,6 +602,15 @@ Page({
       bubbleLeft: newLeft,
       bubbleTop: newTop
     });
+    
+    const dt = e.timeStamp - (this._prevTime || e.timeStamp);
+    if (dt > 0) {
+      this._vx = (curX - this._prevX) / dt * 1000;
+      this._vy = (curY - this._prevY) / dt * 1000;
+      this._prevX = curX;
+      this._prevY = curY;
+      this._prevTime = e.timeStamp;
+    }
   },
 
   /**
@@ -504,7 +624,66 @@ Page({
     // 如果没有移动（即点击），则打开模态框
     if (!this._hasMoved) {
       this.openWorryModal();
+      return;
     }
+    
+    const windowInfo = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : { windowWidth: 375, windowHeight: 667 };
+    const windowWidth = windowInfo.windowWidth;
+    const windowHeight = windowInfo.windowHeight;
+    const bubbleSize = Math.round(windowWidth * 110 / 750);
+    const restitution = 0.6;
+    const friction = 0.92;
+    const start = Date.now();
+    this._animPrevTime = Date.now();
+    
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
+    this._bubbleInertiaTimer = setInterval(() => {
+      const now = Date.now();
+      const dt = now - (this._animPrevTime || now);
+      this._animPrevTime = now;
+      const dtSec = dt / 1000;
+      
+      let left = this.data.bubbleLeft + this._vx * dtSec;
+      let top = this.data.bubbleTop + this._vy * dtSec;
+      let vx = this._vx;
+      let vy = this._vy;
+      
+      if (left < 0) {
+        left = 0;
+        vx = -vx * restitution;
+      }
+      if (left > windowWidth - bubbleSize) {
+        left = windowWidth - bubbleSize;
+        vx = -vx * restitution;
+      }
+      if (top < 0) {
+        top = 0;
+        vy = -vy * restitution;
+      }
+      if (top > windowHeight - bubbleSize) {
+        top = windowHeight - bubbleSize;
+        vy = -vy * restitution;
+      }
+      
+      vx *= friction;
+      vy *= friction;
+      this._vx = vx;
+      this._vy = vy;
+      
+      this.setData({
+        bubbleLeft: left,
+        bubbleTop: top
+      });
+      
+      const speed = Math.sqrt(vx * vx + vy * vy);
+      if (speed < 10 || now - start > 1500) {
+        clearInterval(this._bubbleInertiaTimer);
+        this._bubbleInertiaTimer = null;
+      }
+    }, 16);
   },
 
   /**
@@ -858,12 +1037,20 @@ Page({
   },
 
   onHide: function () {
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
     if (this.data.isAnimating) {
       this.closeAnimation();
     }
   },
 
   onUnload: function () {
+    if (this._bubbleInertiaTimer) {
+      clearInterval(this._bubbleInertiaTimer);
+      this._bubbleInertiaTimer = null;
+    }
     if (this.data.isAnimating) {
       this.closeAnimation();
     }

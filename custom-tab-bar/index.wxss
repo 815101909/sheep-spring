@@ -17,6 +17,11 @@
   z-index: 999;
 }
 
+.tab-bar.dark {
+  background: rgba(18, 18, 18, 0.95);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
 .tab-bar-border {
   position: absolute;
   top: 0;
@@ -61,6 +66,10 @@
   font-size: 22rpx;
   color: #7A7E83;
   transition: all 0.3s ease;
+}
+
+.tab-bar.dark .tab-bar-text {
+  color: #C9C9C9;
 }
 
 .tab-bar-text.active {

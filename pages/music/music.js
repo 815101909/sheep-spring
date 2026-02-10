@@ -1,6 +1,101 @@
 // pages/music/music.js
 const favoriteManager = require('../../utils/favoriteManager');
 
+function parseVttTimestampToSeconds(raw) {
+  const str = (raw || '').trim();
+  if (!str) return null;
+
+  const parts = str.split(':');
+  if (parts.length < 2 || parts.length > 3) return null;
+
+  const last = parts[parts.length - 1];
+  const [secStr, msStr] = last.split('.');
+
+  const seconds = Number(secStr);
+  const milliseconds = msStr == null ? 0 : Number(msStr.padEnd(3, '0').slice(0, 3));
+  if (!Number.isFinite(seconds) || !Number.isFinite(milliseconds)) return null;
+
+  let minutes = 0;
+  let hours = 0;
+  if (parts.length === 2) {
+    minutes = Number(parts[0]);
+  } else {
+    hours = Number(parts[0]);
+    minutes = Number(parts[1]);
+  }
+  if (!Number.isFinite(minutes) || !Number.isFinite(hours)) return null;
+
+  return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+}
+
+function parseWebVttToLyrics(vttText) {
+  if (!vttText || typeof vttText !== 'string') return [];
+
+  const normalized = vttText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalized.split('\n');
+
+  const cues = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = (lines[i] || '').trim();
+
+    if (!line) {
+      i += 1;
+      continue;
+    }
+
+    if (line.toUpperCase() === 'WEBVTT') {
+      i += 1;
+      continue;
+    }
+
+    if (!line.includes('-->') && i + 1 < lines.length) {
+      const nextLine = (lines[i + 1] || '').trim();
+      if (nextLine.includes('-->')) {
+        i += 1;
+      }
+    }
+
+    const timeLine = (lines[i] || '').trim();
+    if (!timeLine.includes('-->')) {
+      i += 1;
+      continue;
+    }
+
+    const [startPartRaw, endPartRaw] = timeLine.split('-->');
+    const startPart = (startPartRaw || '').trim();
+    const endPart = ((endPartRaw || '').trim().split(/\s+/)[0] || '').trim();
+
+    const start = parseVttTimestampToSeconds(startPart);
+    const end = parseVttTimestampToSeconds(endPart);
+    if (start == null || end == null) {
+      i += 1;
+      continue;
+    }
+
+    i += 1;
+    const textLines = [];
+    while (i < lines.length) {
+      const t = lines[i];
+      if (t == null) break;
+      if (!t.trim()) break;
+      textLines.push(t);
+      i += 1;
+    }
+
+    const text = textLines.join('\n').trim();
+    if (text) {
+      cues.push({ time: start, endTime: end, text });
+    }
+
+    i += 1;
+  }
+
+  cues.sort((a, b) => (a.time || 0) - (b.time || 0));
+  return cues;
+}
+
 Page({
   data: {
     // 播放状态
@@ -40,26 +135,34 @@ Page({
     // 搜索和筛选
     searchQuery: '',
     filterFavorite: false,
+    filterType: 'all',
+    filterDate: '',
+    typeOptions: ['类型'],
+    typeIndex: 0,
+    showTypeDropdown: false,
+    selectedTypeText: '类型',
     displayPlaylist: [], // 用于UI显示的列表
     playlist: [], // 初始为空，等待加载
+    displayLimit: 30,
+    displayIncrement: 30,
+    filterPerson: 'all',
+    personOptions: ['作者'],
+    personIndex: 0,
+    selectedPersonText: '作者',
+    showPersonDropdown: false,
 
     // 歌词
     currentLyricsIndex: 0,
-    lyrics: [
-      { time: 0, text: '春日的微风轻拂着海岸线' },
-      { time: 30, text: '海浪轻轻拍打着沙滩' },
-      { time: 60, text: '夕阳洒下金色的余晖' },
-      { time: 90, text: '照亮了我们相遇的瞬间' },
-      { time: 120, text: '初夏的夜晚星空璀璨' },
-      { time: 150, text: '月光洒满整个海湾' },
-      { time: 180, text: '让我们一起唱起这首小夜曲' },
-      { time: 210, text: '在春日的夜晚久久回荡' }
-    ]
+    lyrics: [],
+    showVipModal: false
   },
 
   onLoad: function (options) {
-    // 初始化音频上下文（如果需要）
-    this.initAudio();
+    this.audioCtx = null;
+    this._pauseByUser = false;
+    this._lastPlayTs = 0;
+    this._desiredPlaying = false;
+    this._bgmResumeTimer = null;
     // 初始化显示列表（针对默认数据）
     this.filterPlaylist();
     // 从云数据库加载音乐列表
@@ -70,6 +173,64 @@ Page({
    * 从云数据库加载音乐列表并合并收藏状态
    */
   loadMusicList: async function() {
+    const CACHE_DURATION = 3 * 60 * 60 * 1000;
+    const cache = wx.getStorageSync('spring_music_cache') || null;
+    const now = Date.now();
+    if (cache && cache.expiresAt && cache.expiresAt > now && Array.isArray(cache.list) && cache.list.length > 0) {
+      const finalPlaylist = cache.list;
+      let topicMap = {};
+      try {
+        topicMap = await this.getTopicOrderMap();
+      } catch (_){}
+      try {
+        this.sortPlaylistByTopic(finalPlaylist, topicMap);
+      } catch (_){}
+      try {
+        (finalPlaylist || []).forEach(it => {
+          if (!it || typeof it !== 'object') return;
+          if (!it.publishDateStr) {
+            let ts = this.parsePublishToTs(it.publish_date || it.publishDate || it.publish_time || it.publishTime);
+            if (!Number.isFinite(ts) || ts <= 0) {
+              ts = this.parsePublishToTs(it.publish_time || it.publish_date || it.publishTime || it.publishDate || it.date);
+            }
+            const fmt = this.formatDateYMD(ts);
+            it.publishDateStr = fmt || this.parseDateFromTitleStr(it.title);
+          }
+        });
+      } catch (_){}
+      const displayPlaylist = this.getFilteredPlaylist(finalPlaylist, this.data.searchQuery, this.data.filterFavorite);
+      const firstPrepared = await this.ensureCloudUrlsForSong(finalPlaylist[0] || {});
+      let firstLyrics = (firstPrepared && Array.isArray(firstPrepared.lyrics) && firstPrepared.lyrics.length > 0)
+        ? firstPrepared.lyrics
+        : ((firstPrepared && firstPrepared.vtt && typeof firstPrepared.vtt === 'string' && firstPrepared.vtt.trim())
+          ? parseWebVttToLyrics(firstPrepared.vtt)
+          : []);
+      this.setData({
+        playlist: finalPlaylist,
+        displayPlaylist: displayPlaylist.slice(0, this.data.displayLimit || displayPlaylist.length),
+        currentSongIndex: 0,
+        currentSong: firstPrepared || {},
+        lyrics: firstLyrics,
+        currentLyricsIndex: 0,
+        totalTime: (firstPrepared && firstPrepared.duration) ? firstPrepared.duration : '0:00',
+        isFavorite: (firstPrepared && firstPrepared.isFavorite) ? firstPrepared.isFavorite : false,
+        typeOptions: this.buildTypeOptions(finalPlaylist),
+        personOptions: this.buildPersonOptions(finalPlaylist),
+        topicOptions: this.buildTopicOptions(finalPlaylist),
+        personIndex: 0,
+        selectedPersonText: '作者',
+        filterPerson: 'all',
+        topicIndex: 0,
+        selectedTopicText: '专题',
+        filterTopic: 'all',
+        showTopicDropdown: false
+      });
+      if (firstPrepared && firstPrepared.audio_url) {
+        this.initAudio();
+      }
+      this.refreshMusicListSilently();
+      return;
+    }
     wx.showLoading({ title: '加载中...' });
     
     // 初始化跨环境云实例
@@ -81,20 +242,31 @@ Page({
     const db = c1.database(); // 使用跨环境数据库实例
     
     try {
-      // 1. 并行请求：获取音乐列表和用户收藏列表
-      const [musicRes, favRes] = await Promise.all([
+      const [musicRes, favRes, topicRes] = await Promise.all([
         db.collection('spring_music_library')
+          .where({ status: true })
           .orderBy('sort_order', 'asc')
           .limit(100) // 增加limit以获取更多歌曲（默认20）
           .get(),
         db.collection('spring_user_favorites').where({
           _openid: '{openid}',
           type: 'music'
-        }).get()
+        }).get(),
+        db.collection('spring_topic')
+          .limit(1000)
+          .get()
       ]);
 
       const musicList = musicRes.data;
       const favListDB = favRes.data || [];
+      const topicMap = {};
+      try {
+        (topicRes && topicRes.data || []).forEach(it => {
+          const k = String(it && it.topic || '').trim();
+          const v = Number(it && it.order);
+          if (k) topicMap[k] = v;
+        });
+      } catch (_){}
 
       // 通过统一收藏管理器再同步一次，保证跨环境/权限下也能拿到收藏
       let favIdsManager = [];
@@ -109,15 +281,9 @@ Page({
       ])];
       const favSet = new Set(favMusicIds);
 
-      // 2. 提取所有需要转换的 cloud:// 链接 (src, audio_url, image)
+      // 2. 提取所有需要转换的 cloud:// 链接 (仅图片和封面，音视频按需转换)
       const fileList = [];
       musicList.forEach(item => {
-        if (item.media_url && item.media_url.startsWith('cloud://')) {
-          fileList.push(item.media_url);
-        }
-        if (item.audio_url && item.audio_url.startsWith('cloud://')) {
-          fileList.push(item.audio_url);
-        }
         if (item.image && item.image.startsWith('cloud://')) {
           fileList.push(item.image);
         }
@@ -143,6 +309,8 @@ Page({
           }
         });
       }
+      this.cloudCross = c1;
+      this.tempUrlMap = tempUrlMap;
 
       // 4. 组装最终的 playlist 数据
       const finalPlaylist = musicList.map(item => {
@@ -163,37 +331,85 @@ Page({
                          ? (tempUrlMap[item.poster_url] || item.poster_url)
                          : (item.poster_url || '');
 
+        // 映射后台字段 (Mock演示：如果数据库没有，根据标题或随机生成)
+        const topic = item.topic || (item.title.indexOf('春日') > -1 ? '春日系列' : (item.title.indexOf('故事') > -1 ? '故事上新' : ''));
+        const isVip = item.is_vip || item.isVip || (item.title.indexOf('特别') > -1) || false;
+
+        let displayType = '';
+        if (item.media_type) {
+          const t = String(item.media_type).toLowerCase();
+          if (t === 'video') displayType = '视频';
+          else if (t === 'audio') displayType = '音频';
+          else if (t === 'image') displayType = '图片';
+        } else {
+          if (realAudioUrl) displayType = '音频';
+          else if (realMediaUrl) displayType = '视频';
+          else if (realImage) displayType = '图片';
+        }
         return {
           _id: item._id, // 保留数据库ID用于收藏操作
           title: item.title,
           artist: item.artist,
           duration: item.duration_str,
-          type: item.media_type, // 'video' or 'image'
+          type: item.type || item.category || '',
           media_url: realMediaUrl, // 视频链接
           audio_url: realAudioUrl, // 音频链接
           image: realImage,        // image模式下的展示图
           poster: realPoster,      // video模式下的封面图
-          lyrics: item.lyrics || [], // 确保有歌词数组
+          vtt: item.vtt || '',
+          lyrics: (item.lyrics || []),
           isFavorite: favSet.has(item._id) // 判断是否收藏
+          ,displayType
+          ,initial: this.getInitialLetter(item.title)
+          ,topic
+          ,publishTs: (() => { const ts = this.parsePublishToTs(item.publish_time || item.publish_date || item.publishTime || item.publishDate || item.date); return ts; })()
+          ,publishDateStr: (() => { let ts = this.parsePublishToTs(item.publish_date || item.publishDate || item.publish_time || item.publishTime); if (!Number.isFinite(ts) || ts <= 0) { ts = this.parsePublishToTs(item.publish_time || item.publish_date || item.publishTime || item.publishDate || item.date); } const fmt = this.formatDateYMD(ts); return fmt || this.parseDateFromTitleStr(item.title); })()
+          ,isVip
         };
       });
+
+      this.sortPlaylistByTopic(finalPlaylist, topicMap);
 
       // 5. 更新页面数据
       // 提前计算过滤后的列表，确保 UI 立即更新
       const displayPlaylist = this.getFilteredPlaylist(finalPlaylist, this.data.searchQuery, this.data.filterFavorite);
       console.log('Music list loaded:', finalPlaylist.length, 'Display count:', displayPlaylist.length);
 
+      const firstPrepared = await this.ensureCloudUrlsForSong(finalPlaylist[0] || {});
+      let firstLyrics = (firstPrepared && Array.isArray(firstPrepared.lyrics) && firstPrepared.lyrics.length > 0)
+        ? firstPrepared.lyrics
+        : ((firstPrepared && firstPrepared.vtt && typeof firstPrepared.vtt === 'string' && firstPrepared.vtt.trim())
+          ? parseWebVttToLyrics(firstPrepared.vtt)
+          : []);
       this.setData({
         playlist: finalPlaylist,
-        displayPlaylist: displayPlaylist,
-        // 如果当前没有播放，或者列表更新了，重置为第一首
+        displayPlaylist: displayPlaylist.slice(0, this.data.displayLimit || displayPlaylist.length),
         currentSongIndex: 0,
-        currentSong: finalPlaylist[0] || {},
-        lyrics: finalPlaylist[0]?.lyrics || [],
-        totalTime: finalPlaylist[0]?.duration || '0:00',
-        isFavorite: finalPlaylist[0]?.isFavorite || false
+        currentSong: firstPrepared || {},
+        lyrics: firstLyrics,
+        currentLyricsIndex: 0,
+        totalTime: (firstPrepared && firstPrepared.duration) ? firstPrepared.duration : '0:00',
+        isFavorite: (firstPrepared && firstPrepared.isFavorite) ? firstPrepared.isFavorite : false,
+        typeOptions: this.buildTypeOptions(finalPlaylist),
+        personOptions: this.buildPersonOptions(finalPlaylist),
+        topicOptions: this.buildTopicOptions(finalPlaylist),
+        personIndex: 0,
+        selectedPersonText: '作者',
+        filterPerson: 'all',
+        topicIndex: 0,
+        selectedTopicText: '专题',
+        filterTopic: 'all',
+        showTopicDropdown: false
       });
-      
+      if (firstPrepared && firstPrepared.audio_url) {
+        this.initAudio();
+      }
+      try {
+        wx.setStorageSync('spring_music_cache', {
+          list: finalPlaylist,
+          expiresAt: Date.now() + CACHE_DURATION
+        });
+      } catch (_){}
       wx.hideLoading();
 
     } catch (err) {
@@ -204,6 +420,310 @@ Page({
         icon: 'none'
       });
     }
+  },
+  
+  refreshMusicListSilently: async function() {
+    try {
+      const c1 = new wx.cloud.Cloud({
+        resourceAppid: 'wx85d92d28575a70f4',
+        resourceEnv: 'cloud1-1gsyt78b92c539ef',
+      });
+      await c1.init();
+      const db = c1.database();
+      const [musicRes, favRes, topicRes] = await Promise.all([
+        db.collection('spring_music_library')
+          .where({ status: true })
+          .orderBy('sort_order', 'asc')
+          .limit(100)
+          .get(),
+        db.collection('spring_user_favorites').where({
+          _openid: '{openid}',
+          type: 'music'
+        }).get(),
+        db.collection('spring_topic')
+          .limit(1000)
+          .get()
+      ]);
+      const musicList = musicRes.data;
+      const favListDB = favRes.data || [];
+      const topicMap = {};
+      try {
+        (topicRes && topicRes.data || []).forEach(it => {
+          const k = String(it && it.topic || '').trim();
+          const v = Number(it && it.order);
+          if (k) topicMap[k] = v;
+        });
+      } catch (_){}
+      let favIdsManager = [];
+      try {
+        const synced = await favoriteManager.syncFromCloud();
+        favIdsManager = (synced || []).filter(f => f.type === 'music').map(f => f.id);
+      } catch(_) {}
+      const favMusicIds = [...new Set([
+        ...favListDB.map(item => item.target_id),
+        ...favIdsManager
+      ])];
+      const favSet = new Set(favMusicIds);
+      const fileList = [];
+      musicList.forEach(item => {
+        if (item.image && item.image.startsWith('cloud://')) {
+          fileList.push(item.image);
+        }
+        if (item.poster_url && item.poster_url.startsWith('cloud://')) {
+          fileList.push(item.poster_url);
+        }
+      });
+      let tempUrlMap = {};
+      if (fileList.length > 0) {
+        const tempRes = await c1.getTempFileURL({
+          fileList: fileList,
+          config: { maxAge: 3 * 60 * 60 }
+        });
+        tempRes.fileList.forEach(file => {
+          if (file.status === 0) {
+            tempUrlMap[file.fileID] = file.tempFileURL;
+          }
+        });
+      }
+      this.cloudCross = c1;
+      this.tempUrlMap = tempUrlMap;
+      const finalPlaylist = musicList.map(item => {
+        const realMediaUrl = (item.media_url && item.media_url.startsWith('cloud://')) 
+                      ? (tempUrlMap[item.media_url] || item.media_url) 
+                      : item.media_url;
+        const realAudioUrl = (item.audio_url && item.audio_url.startsWith('cloud://')) 
+                      ? (tempUrlMap[item.audio_url] || item.audio_url) 
+                      : item.audio_url;
+        const realImage = (item.image && item.image.startsWith('cloud://'))
+                         ? (tempUrlMap[item.image] || item.image)
+                         : (item.image || '');
+        const realPoster = (item.poster_url && item.poster_url.startsWith('cloud://'))
+                         ? (tempUrlMap[item.poster_url] || item.poster_url)
+                         : (item.poster_url || '');
+        
+        // 映射后台字段 (Mock演示)
+        const topic = item.topic || (item.title.indexOf('春日') > -1 ? '春日系列' : (item.title.indexOf('故事') > -1 ? '故事上新' : ''));
+        const isVip = item.is_vip || item.isVip || (item.title.indexOf('特别') > -1) || false;
+
+        let displayType = '';
+        if (item.media_type) {
+          const t = String(item.media_type).toLowerCase();
+          if (t === 'video') displayType = '视频';
+          else if (t === 'audio') displayType = '音频';
+          else if (t === 'image') displayType = '图片';
+        } else {
+          if (realAudioUrl) displayType = '音频';
+          else if (realMediaUrl) displayType = '视频';
+          else if (realImage) displayType = '图片';
+        }
+        return {
+          _id: item._id,
+          title: item.title,
+          artist: item.artist,
+          duration: item.duration_str,
+          type: item.type || item.category || '',
+          media_url: realMediaUrl,
+          audio_url: realAudioUrl,
+          image: realImage,
+          poster: realPoster,
+          vtt: item.vtt || '',
+          lyrics: (item.lyrics || []),
+          isFavorite: favSet.has(item._id),
+          displayType,
+          initial: this.getInitialLetter(item.title),
+          topic,
+          publishTs: (() => { const ts = this.parsePublishToTs(item.publish_time || item.publish_date || item.publishTime || item.publishDate || item.date); return ts; })(),
+          publishDateStr: (() => { let ts = this.parsePublishToTs(item.publish_date || item.publishDate || item.publish_time || item.publishTime); if (!Number.isFinite(ts) || ts <= 0) { ts = this.parsePublishToTs(item.publish_time || item.publish_date || item.publishTime || item.publishDate || item.date); } const fmt = this.formatDateYMD(ts); return fmt || this.parseDateFromTitleStr(item.title); })(),
+          isVip
+        };
+      });
+      this.sortPlaylistByTopic(finalPlaylist, topicMap);
+      const displayPlaylist = this.getFilteredPlaylist(finalPlaylist, this.data.searchQuery, this.data.filterFavorite);
+      this.setData({
+        playlist: finalPlaylist,
+        displayPlaylist: displayPlaylist.slice(0, this.data.displayLimit || displayPlaylist.length),
+        typeOptions: this.buildTypeOptions(finalPlaylist),
+        personOptions: this.buildPersonOptions(finalPlaylist),
+        topicOptions: this.buildTopicOptions(finalPlaylist),
+        personIndex: 0,
+        selectedPersonText: '作者',
+        filterPerson: 'all',
+        topicIndex: 0,
+        selectedTopicText: '专题',
+        filterTopic: 'all',
+        showTopicDropdown: false
+      });
+      try {
+        wx.setStorageSync('spring_music_cache', {
+          list: finalPlaylist,
+          expiresAt: Date.now() + 3 * 60 * 60 * 1000
+        });
+      } catch (_){}
+    } catch (_){}
+  },
+
+  ensureCloudUrlsForSong: async function(song) {
+    if (!song || typeof song !== 'object') return song;
+    const out = { ...song };
+    const map = this.tempUrlMap || {};
+    const need = [];
+    if (out.audio_url && out.audio_url.startsWith('cloud://') && !map[out.audio_url]) {
+      need.push(out.audio_url);
+    }
+    if (out.media_url && out.media_url.startsWith('cloud://') && !map[out.media_url]) {
+      need.push(out.media_url);
+    }
+    if (out.poster && out.poster.startsWith('cloud://') && !map[out.poster]) {
+      need.push(out.poster);
+    }
+    if (need.length > 0) {
+      try {
+        let c1 = this.cloudCross;
+        if (!c1) {
+          try {
+            c1 = new wx.cloud.Cloud({ resourceAppid: 'wx85d92d28575a70f4', resourceEnv: 'cloud1-1gsyt78b92c539ef' });
+            await c1.init();
+            this.cloudCross = c1;
+          } catch (_){}
+        }
+        if (c1) {
+          const r = await c1.getTempFileURL({ fileList: need, config: { maxAge: 3 * 60 * 60 } });
+          (r.fileList || []).forEach(file => { if (file.status === 0) { map[file.fileID] = file.tempFileURL; } });
+        } else {
+          const r2 = await wx.cloud.getTempFileURL({ fileList: need });
+          (r2.fileList || []).forEach(file => { if (file.status === 0) { map[file.fileID] = file.tempFileURL; } });
+        }
+        this.tempUrlMap = map;
+      } catch (_){}
+    }
+    if (out.audio_url && out.audio_url.startsWith('cloud://')) {
+      out.audio_url = map[out.audio_url] || out.audio_url;
+    }
+    if (out.media_url && out.media_url.startsWith('cloud://')) {
+      out.media_url = map[out.media_url] || out.media_url;
+    }
+    if (out.poster && out.poster.startsWith('cloud://')) {
+      out.poster = map[out.poster] || out.poster;
+    }
+    return out;
+  },
+
+  getInitialLetter: function(str) {
+    const s = (str || '').toString().trim();
+    if (!s) return '#';
+    const letter = s.match(/[A-Za-z]/);
+    if (letter) return letter[0].toUpperCase();
+    const digit = s.match(/[0-9]/);
+    if (digit) return digit[0];
+    return '#';
+  },
+  parsePublishToTs: function(raw) {
+    if (raw == null) return 0;
+    if (typeof raw === 'number') {
+      if (!Number.isFinite(raw)) return 0;
+      return raw < 1e12 ? Math.floor(raw * 1000) : Math.floor(raw);
+    }
+    if (raw instanceof Date) return raw.getTime() || 0;
+    const s = String(raw || '').trim();
+    if (!s) return 0;
+    const d = new Date(s);
+    const t = d.getTime();
+    if (Number.isFinite(t)) return t;
+    const n = Number(s);
+    if (Number.isFinite(n)) return n < 1e12 ? Math.floor(n * 1000) : Math.floor(n);
+    return 0;
+  },
+  formatDateYMD: function(ts) {
+    const t = Number(ts);
+    if (!Number.isFinite(t) || t <= 0) return '';
+    const d = new Date(t);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  },
+  parseDateFromTitleStr: function(title) {
+    const s = String(title || '').trim();
+    if (!s) return '';
+    const m1 = s.match(/[【\[]\s*(\d{4})\s*[年\-\/\.]\s*(\d{1,2})\s*[月\-\/\.]\s*(\d{1,2})\s*日?\s*[】\]]/);
+    if (m1) {
+      const y = Number(m1[1]);
+      const mo = String(Number(m1[2])).padStart(2, '0');
+      const da = String(Number(m1[3])).padStart(2, '0');
+      if (Number.isFinite(y)) return `${y}-${mo}-${da}`;
+    }
+    const m2 = s.match(/[【\[]\s*(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})\s*[】\]]/);
+    if (m2) {
+      const y = Number(m2[1]);
+      const mo = String(Number(m2[2])).padStart(2, '0');
+      const da = String(Number(m2[3])).padStart(2, '0');
+      if (Number.isFinite(y)) return `${y}-${mo}-${da}`;
+    }
+    const m3 = s.match(/[【\[]\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*[】\]]/);
+    if (m3) {
+      const y = new Date().getFullYear();
+      const mo = String(Number(m3[1])).padStart(2, '0');
+      const da = String(Number(m3[2])).padStart(2, '0');
+      return `${y}-${mo}-${da}`;
+    }
+    return '';
+  },
+  getTopicOrderMap: async function() {
+    try {
+      let c1 = this.cloudCross;
+      if (!c1) {
+        c1 = new wx.cloud.Cloud({ resourceAppid: 'wx85d92d28575a70f4', resourceEnv: 'cloud1-1gsyt78b92c539ef' });
+        await c1.init();
+        this.cloudCross = c1;
+      }
+      const db = c1.database();
+      const res = await db.collection('spring_topic').limit(1000).get();
+      const map = {};
+      (res && res.data || []).forEach(it => {
+        const k = String(it && it.topic || '').trim();
+        const v = Number(it && it.order);
+        if (k) map[k] = v;
+      });
+      return map;
+    } catch (_){}
+    try {
+      const db2 = wx.cloud.database();
+      const res2 = await db2.collection('spring_topic').limit(1000).get();
+      const map2 = {};
+      (res2 && res2.data || []).forEach(it => {
+        const k = String(it && it.topic || '').trim();
+        const v = Number(it && it.order);
+        if (k) map2[k] = v;
+      });
+      return map2;
+    } catch (_){}
+    return {};
+  },
+  sortPlaylistByTopic: function(list, orderMap) {
+    const map = orderMap || {};
+    try {
+      (list || []).sort((a, b) => {
+        const ta = String(a && a.topic || '').trim();
+        const tb = String(b && b.topic || '').trim();
+        const oa = Number(map[ta]);
+        const ob = Number(map[tb]);
+        const av = Number.isFinite(oa) ? oa : Number.MAX_SAFE_INTEGER;
+        const bv = Number.isFinite(ob) ? ob : Number.MAX_SAFE_INTEGER;
+        if (av !== bv) return av - bv;
+        if (ta === '每日播报' && tb === '每日播报') {
+          const pa = Number(a && a.publishTs);
+          const pb = Number(b && b.publishTs);
+          const pav = Number.isFinite(pa) ? pa : 0;
+          const pbv = Number.isFinite(pb) ? pb : 0;
+          if (pav !== pbv) return pbv - pav;
+        }
+        const ia = this.getInitialLetter(a && a.title);
+        const ib = this.getInitialLetter(b && b.title);
+        if (ia === ib) return (a && a.title || '').localeCompare(b && b.title || '');
+        return ia.localeCompare(ib);
+      });
+    } catch (_){}
+    return list;
   },
 
   onShow: function () {
@@ -221,114 +741,51 @@ Page({
   },
 
   onUnload: function () {
-
+    
   },
 
   // 初始化音频
   initAudio: function() {
-    // 获取全局唯一的背景音频管理器
-    const bgAudioManager = wx.getBackgroundAudioManager();
-    const app = getApp();
-    
-    // 监听播放进度更新事件
-    bgAudioManager.onTimeUpdate(() => {
-      // 1. 过滤掉全局背景音乐的事件
-      // 如果当前播放的音频 src 与全局 BGM 的 src (或真实链接) 相同，说明是 BGM 在播放
-      // 此时不应更新本页面的进度条
-      if (app.bgmSrc && (bgAudioManager.src === app.bgmSrc || bgAudioManager.src === app.bgmRealUrl)) {
-          return;
-      }
-
-      // 只有当存在音频URL时，才以音频进度为主更新UI
-      // 避免与视频进度冲突（如果同时播放，优先音频）
-      if (this.data.currentSong.audio_url) {
-        const currentTime = bgAudioManager.currentTime;
-        const duration = bgAudioManager.duration;
-        this.updateProgressFromEvent(currentTime, duration);
-      }
+    this.audioCtx = wx.getBackgroundAudioManager();
+    const currentSongInit = this.data.currentSong || {};
+    try { this.audioCtx.title = String(currentSongInit.title || '随身听'); } catch(_){}
+    try { this.audioCtx.epname = String(currentSongInit.topic || '春日扬帆'); } catch(_){}
+    try { this.audioCtx.singer = String(currentSongInit.artist || ''); } catch(_){}
+    try { this.audioCtx.coverImgUrl = String(currentSongInit.poster || currentSongInit.image || ''); } catch(_){}
+    this.audioCtx.onTimeUpdate(() => {
+      const ct = Number(this.audioCtx.currentTime || 0);
+      const d = Number(this.audioCtx.duration || 0);
+      this.updateProgressFromEvent(ct, d);
     });
-
-    // 监听自然播放结束事件
-    bgAudioManager.onEnded(() => {
-       // 同样过滤 BGM
-       if (app.bgmSrc && (bgAudioManager.src === app.bgmSrc || bgAudioManager.src === app.bgmRealUrl)) {
-          return;
-       }
-
-       if (this.data.currentSong.audio_url) {
-         this.nextSong();
-       }
-    });
-
-    // 监听播放/暂停/停止事件，同步UI状态
-    bgAudioManager.onPlay(() => {
-      // BGM 互斥逻辑：音乐页面开始播放时，暂停全局 BGM
-      // 注意：现在的 BGM 是 InnerAudioContext，bgAudioManager 永远不会是 BGM
-      getApp().stopBGM();
-
+    this.audioCtx.onPlay(() => {
+      getApp().suppressBGM();
       this.setData({ isPlaying: true });
-      
-      // 记录收听数据（按天统计）
       this.recordListenCount();
-      
-      // 延迟设置倍速，确保音频管道已准备好
-      // 某些机型或模拟器在立即设置时可能会失效
-      setTimeout(() => {
-          const mgr = wx.getBackgroundAudioManager();
-          if (mgr.src) { // 确保仍在播放
-             mgr.playbackRate = this.data.playbackRate;
-          }
-      }, 100);
-      
-      // 再尝试一次，针对顽固机型
-      setTimeout(() => {
-          const mgr = wx.getBackgroundAudioManager();
-          if (mgr.src) mgr.playbackRate = this.data.playbackRate;
-      }, 500);
+      this._lastPlayTs = Date.now();
     });
-    bgAudioManager.onCanplay(() => {
-        // 过滤 BGM (BGM 已移出 bgAudioManager，此逻辑可保留作为防守)
-        if (app.bgmSrc && (bgAudioManager.src === app.bgmSrc || bgAudioManager.src === app.bgmRealUrl)) return;
-
-        // 部分机型在 onCanplay 设置才有效
-        setTimeout(() => {
-            const mgr = wx.getBackgroundAudioManager();
-            if (mgr.src) mgr.playbackRate = this.data.playbackRate;
-        }, 50);
+    this.audioCtx.onPause(() => {
+      this.setData({ isPlaying: false });
+      const now = Date.now();
+      const recent = (this._lastPlayTs && (now - this._lastPlayTs < 800));
+      if (recent && !this._pauseByUser) {
+        this._pauseByUser = false;
+        return;
+      }
+      if (this._bgmResumeTimer) { try { clearTimeout(this._bgmResumeTimer); } catch (_){ } this._bgmResumeTimer = null; }
+      if (!this._desiredPlaying) {
+        getApp().releaseBGM();
+        getApp().playBGM(true);
+      }
+      this._pauseByUser = false;
     });
-    bgAudioManager.onPause(() => {
-       // 如果当前是页面歌曲被暂停，才更新 UI
-       if (this.data.currentSong.audio_url && bgAudioManager.src === this.data.currentSong.audio_url) {
-         this.setData({ isPlaying: false });
-         
-         // 恢复 BGM (如果开启)
-         getApp().playBGM();
-       }
+    this.audioCtx.onStop(() => {
+      this.setData({ isPlaying: false });
     });
-    bgAudioManager.onStop(() => {
-        // 同上
-        if (this.data.currentSong.audio_url && bgAudioManager.src === this.data.currentSong.audio_url) {
-         this.setData({ isPlaying: false });
-         
-         // 恢复 BGM (如果开启)
-         getApp().playBGM();
-        }
+    this.audioCtx.onEnded(() => {
+      this.nextSong();
     });
-    bgAudioManager.onEnded(() => {
-       // 同样过滤 BGM
-       if (app.bgmSrc && (bgAudioManager.src === app.bgmSrc || bgAudioManager.src === app.bgmRealUrl)) {
-          return;
-       }
-
-       if (this.data.currentSong.audio_url) {
-         this.nextSong();
-         // 注意：nextSong 会自动播放下一首，所以不需要在这里恢复 BGM
-         // 除非列表播完了停止了？nextSong 逻辑通常是循环或停止。
-         // 如果 nextSong 触发播放，onPlay 会再次暂停 BGM。
-       } else {
-           // 如果没有下一首（虽然逻辑上不太可能，因为 nextSong 负责切），恢复 BGM
-           getApp().playBGM();
-       }
+    this.audioCtx.onError(() => {
+      wx.showToast({ title: '播放失败', icon: 'none' });
     });
   },
 
@@ -412,7 +869,8 @@ Page({
   getCurrentLyricsIndex: function(currentSeconds) {
     const lyrics = this.data.lyrics;
     for (let i = lyrics.length - 1; i >= 0; i--) {
-      if (currentSeconds >= lyrics[i].time) {
+      const start = Number(lyrics[i]?.time ?? lyrics[i]?.start ?? 0);
+      if (Number.isFinite(start) && currentSeconds >= start) {
         return i;
       }
     }
@@ -422,95 +880,238 @@ Page({
   // 切换播放/暂停
   togglePlay: function() {
     getApp().playClickSound();
+    
+    // 播放前的 VIP 检查
+    if (!this.data.isPlaying) {
+      const checkSong = this.data.currentSong || this.data.playlist[this.data.currentSongIndex] || {};
+      if (checkSong && checkSong.isVip && !this.isVipValid()) {
+        if (this.vipPreviewLocked) {
+          this.setData({ showVipModal: true, isPlaying: false });
+          return;
+        }
+      }
+    }
+
     const isPlaying = !this.data.isPlaying;
     this.setData({
       isPlaying: isPlaying
     });
+    this._desiredPlaying = isPlaying;
+    if (isPlaying) {
+      try { getApp().suppressBGM(); } catch (_){}
+      this._pauseByUser = false;
+      this._lastPlayTs = Date.now();
+      if (this._bgmResumeTimer) { try { clearTimeout(this._bgmResumeTimer); } catch (_){ } this._bgmResumeTimer = null; }
+    } else {
+      this._pauseByUser = true;
+    }
     
-    const currentSong = this.data.playlist[this.data.currentSongIndex];
+    let currentSong = this.data.currentSong || this.data.playlist[this.data.currentSongIndex] || {};
+    if (!currentSong || (!currentSong.audio_url && !currentSong.media_url)) {
+      wx.showToast({ title: '正在加载歌曲', icon: 'none' });
+      this.setData({ isPlaying: false });
+      return;
+    }
     
     // 1. 处理视频播放
     if (currentSong.media_url) {
+      if (typeof currentSong.media_url === 'string' && currentSong.media_url.startsWith('cloud://')) {
+        this.ensureCloudUrlsForSong(currentSong).then(prepared => {
+          currentSong = prepared || currentSong;
+          this.setData({ currentSong });
+          const videoContext = wx.createVideoContext('myVideo');
+          if (isPlaying) {
+            getApp().suppressBGM();
+            videoContext.play();
+            if (currentSong && currentSong.isVip && !this.isVipValid()) { this.startVipPreviewGate(); }
+          } else {
+            videoContext.pause();
+            this.pauseVipPreviewGate();
+            getApp().releaseBGM();
+            getApp().playBGM(true);
+          }
+        });
+        return;
+      }
       const videoContext = wx.createVideoContext('myVideo');
       if (isPlaying) {
+        getApp().suppressBGM();
         videoContext.play();
+        if (currentSong && currentSong.isVip && !this.isVipValid()) { this.startVipPreviewGate(); }
       } else {
         videoContext.pause();
+        this.pauseVipPreviewGate();
+        getApp().releaseBGM();
+        getApp().playBGM(true);
       }
+      return;
     }
 
-    // 2. 处理音频播放
-    // 如果有音频链接，使用背景音频管理器播放
     if (currentSong.audio_url) {
-      const bgAudioManager = wx.getBackgroundAudioManager();
-      if (isPlaying) {
-        if (bgAudioManager.src !== currentSong.audio_url) {
-            bgAudioManager.title = currentSong.title || '未知标题';
-            bgAudioManager.singer = currentSong.artist || '未知艺术家';
-            bgAudioManager.coverImgUrl = currentSong.image || currentSong.poster || '';
-            bgAudioManager.src = currentSong.audio_url;
+      const needConvert = typeof currentSong.audio_url === 'string' && currentSong.audio_url.startsWith('cloud://');
+      const doPlay = (songObj) => {
+        if (!this.audioCtx) { this.initAudio(); }
+        if (isPlaying) {
+          getApp().suppressBGM();
+          if (songObj && songObj.audio_url && this.audioCtx.src !== songObj.audio_url) {
+            this.audioCtx.src = songObj.audio_url;
+          }
+          this.audioCtx.play();
+          const gateSong = songObj || currentSong;
+          if (gateSong && gateSong.isVip && !this.isVipValid()) { this.startVipPreviewGate(); }
         } else {
-            bgAudioManager.play();
+          this.audioCtx.pause();
+          this.pauseVipPreviewGate();
+          getApp().releaseBGM();
+          getApp().playBGM(true);
         }
+      };
+      if (needConvert) {
+        this.ensureCloudUrlsForSong(currentSong).then(prepared => {
+          currentSong = prepared || currentSong;
+          this.setData({ currentSong });
+          doPlay(currentSong);
+        });
+        return;
+      }
+      if (!this.audioCtx) { this.initAudio(); }
+      if (isPlaying) {
+        getApp().suppressBGM();
+        if (this.audioCtx.src !== currentSong.audio_url) {
+          this.audioCtx.src = currentSong.audio_url;
+        }
+        this.audioCtx.play();
+        if (currentSong && currentSong.isVip && !this.isVipValid()) { this.startVipPreviewGate(); }
       } else {
-        bgAudioManager.pause();
+        this.audioCtx.pause();
+        this.pauseVipPreviewGate();
+        getApp().releaseBGM();
+        getApp().playBGM(true);
       }
     } else if (!currentSong.media_url) {
-        // 如果既没有视频也没有音频（异常情况），重置状态
-        this.setData({ isPlaying: false });
+      this.setData({ isPlaying: false });
     }
   },
 
   // 下载歌曲
-  downloadSong: function() {
+  downloadSong: async function() {
     getApp().playClickSound();
-    const currentSong = this.data.playlist[this.data.currentSongIndex];
-    // 根据类型选择下载链接
-    const src = currentSong.type === 'video' ? currentSong.media_url : currentSong.audio_url;
-    
-    wx.showLoading({ title: '下载中...' });
-    
-    // 如果是网络资源
-    if (src && src.startsWith('http')) {
+    const currentSong = this.data.playlist[this.data.currentSongIndex] || {};
+    let src = currentSong.audio_url || currentSong.media_url || '';
+    const isVideo = !!currentSong.media_url && !currentSong.audio_url;
+    if (!src) {
+      wx.showToast({ title: '暂无可下载资源', icon: 'none' });
+      return;
+    }
+    try {
+      wx.showLoading({ title: '下载中...' });
+      if (src.startsWith('http://')) {
+        wx.hideLoading();
+        wx.showToast({ title: '需HTTPS链接', icon: 'none' });
+        return;
+      }
+      if (src.startsWith('cloud://')) {
+        try {
+          const c1 = new wx.cloud.Cloud({ resourceAppid: 'wx85d92d28575a70f4', resourceEnv: 'cloud1-1gsyt78b92c539ef' });
+          await c1.init();
+          const res = await c1.getTempFileURL({ fileList: [src] });
+          if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
+            src = res.fileList[0].tempFileURL;
+          }
+        } catch (_) {
+          try {
+            const res2 = await wx.cloud.getTempFileURL({ fileList: [src] });
+            if (res2.fileList && res2.fileList[0] && res2.fileList[0].tempFileURL) {
+              src = res2.fileList[0].tempFileURL;
+            }
+          } catch (_) {}
+        }
+      }
+      if (!/^https:\/\//.test(src)) {
+        wx.hideLoading();
+        wx.showToast({ title: '资源不可下载', icon: 'none' });
+        return;
+      }
       wx.downloadFile({
         url: src,
         success: (res) => {
           if (res.statusCode === 200) {
             wx.hideLoading();
-            console.log('文件下载路径：', res.tempFilePath);
-            
-            // 如果是视频，尝试保存到相册
-            if (currentSong.type === 'video') {
-              wx.saveVideoToPhotosAlbum({
-                filePath: res.tempFilePath,
-                success: () => wx.showToast({ title: '已保存到相册' }),
-                fail: () => wx.showToast({ title: '保存失败', icon: 'none' })
+            const tempPath = res.tempFilePath;
+            if (isVideo) {
+              wx.getSetting({
+                success: (st) => {
+                  const granted = !!(st.authSetting && st.authSetting['scope.writePhotosAlbum']);
+                  const doSave = () => {
+                    wx.saveVideoToPhotosAlbum({
+                      filePath: tempPath,
+                      success: () => wx.showToast({ title: '已保存到相册' }),
+                      fail: () => wx.showToast({ title: '保存失败', icon: 'none' })
+                    });
+                  };
+                  if (granted) {
+                    doSave();
+                  } else {
+                    wx.authorize({
+                      scope: 'scope.writePhotosAlbum',
+                      success: doSave,
+                      fail: () => {
+                        wx.showModal({
+                          title: '提示',
+                          content: '需要相册权限才能保存视频',
+                          success: (mres) => {
+                            if (mres.confirm) wx.openSetting();
+                          }
+                        });
+                      }
+                    });
+                  }
+                }
               });
             } else {
-                // 音频文件无法直接保存到系统音乐库，只能提示下载成功（临时路径）
-                // 或者可以保存到文件系统 wx.getFileSystemManager().saveFile
-                wx.showToast({
-                    title: '下载成功',
-                    icon: 'success'
+              const fs = wx.getFileSystemManager();
+              const extMatch = (src.split('?')[0] || '').match(/\.(mp3|m4a|aac|wav|flac|ogg)$/i);
+              const ext = extMatch ? '.' + extMatch[1].toLowerCase() : '.mp3';
+              const savePath = `${wx.env.USER_DATA_PATH}/spring_music_${Date.now()}${ext}`;
+              try {
+                fs.saveFile({
+                  tempFilePath: tempPath,
+                  filePath: savePath,
+                  success: () => {
+                    wx.showToast({ title: '已保存至本地缓存' });
+                    wx.setClipboardData({
+                      data: src,
+                      success: () => wx.showModal({ title: '提示', content: '已复制下载链接，请在浏览器粘贴下载', showCancel: false, confirmText: '好的' })
+                    });
+                  },
+                  fail: () => {
+                    wx.showToast({ title: '保存失败', icon: 'none' });
+                  }
                 });
+              } catch (_) {
+                wx.showToast({ title: '保存失败', icon: 'none' });
+              }
             }
+          } else {
+            wx.hideLoading();
+            wx.showToast({ title: `下载失败(${res.statusCode})`, icon: 'none' });
           }
         },
         fail: (err) => {
           wx.hideLoading();
-          wx.showToast({
-            title: '下载失败',
-            icon: 'none'
-          });
-          console.error('下载失败', err);
+          const msg = (err && err.errMsg) ? err.errMsg : '下载失败';
+          wx.showToast({ title: msg, icon: 'none' });
+          try { 
+            wx.setClipboardData({
+              data: src,
+              success: () => wx.showModal({ title: '提示', content: '已复制下载链接，请在浏览器粘贴下载', showCancel: false, confirmText: '好的' })
+            }); 
+          } catch(_) {}
         }
       });
-    } else {
+    } catch (e) {
       wx.hideLoading();
-      wx.showToast({
-        title: '非网络资源',
-        icon: 'none'
-      });
+      wx.showToast({ title: '下载失败', icon: 'none' });
     }
   },
 
@@ -541,17 +1142,30 @@ Page({
   },
   
   // 切换歌曲通用方法
-  changeSong: function(index) {
-    const nextSong = this.data.playlist[index];
+  changeSong: async function(index) {
+    const base = this.data.playlist[index];
+
+    this.pauseVipPreviewGate();
+    this.vipPreviewLocked = false;
+
+    const nextSong = await this.ensureCloudUrlsForSong(base);
+    let nextLyrics = nextSong && nextSong.lyrics ? nextSong.lyrics : [];
+    if ((!nextLyrics || nextLyrics.length === 0) && nextSong && nextSong.vtt && typeof nextSong.vtt === 'string' && nextSong.vtt.trim()) {
+      nextLyrics = parseWebVttToLyrics(nextSong.vtt);
+    }
     this.setData({
       currentSongIndex: index,
       currentSong: nextSong,
       progress: 0,
       currentTime: '0:00',
-      isPlaying: true // 切换后自动播放
+      totalTime: nextSong && nextSong.duration ? nextSong.duration : '0:00',
+      lyrics: nextLyrics || [],
+      currentLyricsIndex: 0,
+      isFavorite: nextSong && nextSong.isFavorite ? nextSong.isFavorite : false,
+      isPlaying: false
     }, () => {
       // 记录收听数据
-      this.recordListenCount();
+      // 仅在用户点击播放时记录
       
       // setData 回调，确保视图更新后再操作视频上下文
       // 1. 如果有视频，自动播放视频
@@ -559,27 +1173,43 @@ Page({
         const videoContext = wx.createVideoContext('myVideo');
         // 稍微延迟确保组件已挂载
         setTimeout(() => {
+          getApp().stopBGM();
           videoContext.playbackRate(this.data.playbackRate); 
           videoContext.play();
+          if (nextSong && nextSong.isVip && !this.isVipValid()) { this.startVipPreviewGate(); }
         }, 200);
       }
     });
     
-    // 2. 如果有音频，自动播放音频
-    if (nextSong.audio_url) {
-      const bgAudioManager = wx.getBackgroundAudioManager();
-      bgAudioManager.title = nextSong.title || '未知标题';
-      bgAudioManager.singer = nextSong.artist || '未知艺术家';
-      bgAudioManager.coverImgUrl = nextSong.image || nextSong.poster || '';
-      bgAudioManager.src = nextSong.audio_url;
-      // 设置 src 后会自动触发 onPlay，那里会应用倍速
-      // 但为了保险，这里也尝试设置一次（虽然可能被 reset）
-      bgAudioManager.playbackRate = this.data.playbackRate; 
-    } else {
-      // 如果没有音频链接，但可能有视频声音，或者确实没有音频
-      // 停止之前的背景音频，以免声音混杂
-      wx.getBackgroundAudioManager().stop();
+    if (!nextSong.audio_url) {
+      if (this.audioCtx) {
+        try { this.audioCtx.stop(); } catch (_){ try { this.audioCtx.pause(); } catch(_){ } }
+      }
     }
+  },
+  closeVipModal: function() {
+    this.vipPreviewLocked = true;
+    this.setData({ showVipModal: false });
+  },
+  goToVip: function() {
+    this.vipPreviewLocked = true;
+    wx.navigateTo({ url: '/pages/vip/vip' });
+    this.setData({ showVipModal: false });
+  },
+
+  onVideoPlay: function() {
+    getApp().stopBGM();
+    this.setData({ isPlaying: true });
+  },
+  onVideoPause: function() {
+    if (!this.data.currentSong.audio_url) {
+      if (this._bgmResumeTimer) { try { clearTimeout(this._bgmResumeTimer); } catch (_){ } this._bgmResumeTimer = null; }
+      if (!this._desiredPlaying) {
+        getApp().releaseBGM();
+        getApp().playBGM(true);
+      }
+    }
+    this.setData({ isPlaying: false });
   },
 
   // 切换播放模式
@@ -651,6 +1281,91 @@ Page({
     });
     this.filterPlaylist();
   },
+  onTypeChange: function(e) {
+    const idx = e.detail.value;
+    const opts = this.data.typeOptions || [];
+    const text = opts[idx] || '类型';
+    this.setData({
+      typeIndex: idx,
+      selectedTypeText: text,
+      filterType: text === '类型' ? 'all' : text
+    });
+    this.filterPlaylist();
+  },
+  toggleTypeDropdown: function() {
+    this.setData({
+      showTypeDropdown: !this.data.showTypeDropdown
+    });
+  },
+  togglePersonDropdown: function() {
+    this.setData({
+      showPersonDropdown: !this.data.showPersonDropdown
+    });
+  },
+  selectPerson: function(e) {
+    const text = (e.currentTarget.dataset.person || '').trim();
+    const idx = (this.data.personOptions || []).indexOf(text);
+    this.setData({
+      selectedPersonText: text || '作者',
+      filterPerson: (text === '作者') ? 'all' : text,
+      personIndex: idx >= 0 ? idx : 0,
+      showPersonDropdown: false
+    });
+    this.filterPlaylist();
+  },
+  selectType: function(e) {
+    const text = (e.currentTarget.dataset.type || '').trim();
+    const idx = (this.data.typeOptions || []).indexOf(text);
+    this.setData({
+      selectedTypeText: text || '类型',
+      filterType: (text === '类型') ? 'all' : text,
+      typeIndex: idx >= 0 ? idx : 0,
+      showTypeDropdown: false
+    });
+    this.filterPlaylist();
+  },
+  toggleTopicDropdown: function() {
+    this.setData({
+      showTopicDropdown: !this.data.showTopicDropdown
+    });
+  },
+  selectTopic: function(e) {
+    const text = (e.currentTarget.dataset.topic || '').trim();
+    const idx = (this.data.topicOptions || []).indexOf(text);
+    this.setData({
+      selectedTopicText: text || '专题',
+      filterTopic: (text === '专题') ? 'all' : text,
+      topicIndex: idx >= 0 ? idx : 0,
+      showTopicDropdown: false
+    });
+    this.filterPlaylist();
+  },
+  onDateChange: function(e) {
+    return
+  },
+  clearFilterDate: function() {
+    return
+  },
+  resetFilters: function() {
+    getApp().playClickSound();
+    this.setData({
+      searchQuery: '',
+      filterFavorite: false,
+      filterPerson: 'all',
+      selectedTypeText: '类型',
+      filterType: 'all',
+      typeIndex: 0,
+      showTypeDropdown: false,
+      showPersonDropdown: false,
+      showTopicDropdown: false,
+      personIndex: 0,
+      selectedPersonText: '作者',
+      selectedTopicText: '专题',
+      filterTopic: 'all',
+      topicIndex: 0
+    });
+    this.filterPlaylist();
+  },
 
   // 切换收藏筛选
   toggleFilterFavorite: function() {
@@ -661,34 +1376,103 @@ Page({
     this.filterPlaylist();
   },
 
-  // 筛选播放列表 (核心逻辑)
   getFilteredPlaylist: function(playlist, searchQuery, filterFavorite) {
-    // 确保 query 是字符串，避免 undefined 报错
     const query = (searchQuery || '').toString().toLowerCase().trim();
+    const filterType = this.data.filterType || 'all';
+    const filterPerson = this.data.filterPerson || 'all';
+    const filterTopic = this.data.filterTopic || 'all';
 
     return (playlist || []).map((item, index) => {
       return { ...item, originalIndex: index };
     }).filter(item => {
-      // 筛选逻辑，确保 title 和 artist 存在
       const title = (item.title || '').toString().toLowerCase();
       const artist = (item.artist || '').toString().toLowerCase();
       
       const matchSearch = title.includes(query) || artist.includes(query);
       const matchFavorite = filterFavorite ? item.isFavorite : true;
-      return matchSearch && matchFavorite;
+      const typeVal = item.type;
+      const matchType = filterType === 'all' ? true : (Array.isArray(typeVal) ? typeVal.includes(filterType) : (String(typeVal || '') === filterType));
+      const matchPerson = filterPerson === 'all' ? true : ((item.artist || '') === filterPerson);
+      const topicNorm = (item.topic || '').toString().trim();
+      const matchTopic = filterTopic === 'all' ? true : (topicNorm === filterTopic);
+      return matchSearch && matchFavorite && matchType && matchPerson && matchTopic;
     });
   },
 
   // 响应搜索和筛选操作 (UI交互入口)
   filterPlaylist: function() {
     const { playlist, searchQuery, filterFavorite } = this.data;
-    const displayPlaylist = this.getFilteredPlaylist(playlist, searchQuery, filterFavorite);
+    const full = this.getFilteredPlaylist(playlist, searchQuery, filterFavorite);
+    const limited = full.slice(0, this.data.displayLimit || full.length);
 
-    console.log('Filter applied:', { query: searchQuery, filterFavorite, count: displayPlaylist.length });
+    console.log('Filter applied:', { query: searchQuery, filterFavorite, count: limited.length });
     
     this.setData({
-      displayPlaylist: displayPlaylist
+      displayPlaylist: limited
     });
+  },
+  buildPersonOptions: function(list) {
+    const set = new Set();
+    (list || []).forEach(it => {
+      const a = (it && it.artist) ? String(it.artist).trim() : '';
+      if (a) set.add(a);
+    });
+    const arr = Array.from(set);
+    arr.sort((a, b) => {
+      const ia = this.getInitialLetter(a);
+      const ib = this.getInitialLetter(b);
+      if (ia === ib) return a.localeCompare(b);
+      return ia.localeCompare(ib);
+    });
+    return ['作者', ...arr];
+  },
+  buildTypeOptions: function(list) {
+    const set = new Set();
+    (list || []).forEach(it => {
+      const t = it && it.type;
+      if (Array.isArray(t)) {
+        t.forEach(x => {
+          const v = String(x || '').trim();
+          if (v) set.add(v);
+        });
+      } else {
+        const v = String(t || '').trim();
+        if (v) set.add(v);
+      }
+    });
+    const arr = Array.from(set);
+    arr.sort((a, b) => {
+      const ia = this.getInitialLetter(a);
+      const ib = this.getInitialLetter(b);
+      if (ia === ib) return a.localeCompare(b);
+      return ia.localeCompare(ib);
+    });
+    return ['类型', ...arr];
+  },
+  buildTopicOptions: function(list) {
+    const set = new Set();
+    (list || []).forEach(it => {
+      const t = (it && it.topic) ? String(it.topic).trim() : '';
+      if (t) set.add(t);
+    });
+    const arr = Array.from(set);
+    arr.sort((a, b) => {
+      const ia = this.getInitialLetter(a);
+      const ib = this.getInitialLetter(b);
+      if (ia === ib) return a.localeCompare(b);
+      return ia.localeCompare(ib);
+    });
+    return ['专题', ...arr];
+  },
+  onScrollToLower: function() {
+    const limit = this.data.displayLimit || 30;
+    const inc = this.data.displayIncrement || 30;
+    const total = this.getFilteredPlaylist(this.data.playlist, this.data.searchQuery, this.data.filterFavorite).length;
+    const nextLimit = Math.min(limit + inc, total);
+    if (nextLimit !== limit) {
+      this.setData({ displayLimit: nextLimit });
+      this.filterPlaylist();
+    }
   },
   
   // 选择列表中的歌曲
@@ -717,29 +1501,28 @@ Page({
     // 1. 如果有视频，设置视频倍速
     if (currentSong.media_url) {
         const videoContext = wx.createVideoContext('myVideo');
-        videoContext.playbackRate(rate);
+        try {
+          videoContext.playbackRate(rate);
+          if (this.data.isPlaying) {
+            try { videoContext.pause(); } catch (_){}
+            setTimeout(() => { try { videoContext.playbackRate(rate); videoContext.play(); } catch(_){ } }, 80);
+          }
+        } catch(_){}
     }
     
-    // 2. 如果有音频，设置音频倍速
-    if (currentSong.audio_url) {
-        const bgAudioManager = wx.getBackgroundAudioManager();
-        // 必须在播放状态下设置才有效，如果不确定状态，可以尝试设置
-        // 且为了兼容性，建议放在 try-catch 中
+    if (currentSong.audio_url && this.audioCtx) {
+      const supportsRate = (typeof this.audioCtx.playbackRate !== 'undefined');
+      if (!supportsRate && !currentSong.media_url) {
+        wx.showToast({ title: '后台播放不支持倍速', icon: 'none' });
+      } else {
         try {
-            bgAudioManager.playbackRate = rate;
-            
-            // 某些情况下需要 seek 才能触发 pipeline 更新
-            // 但 seek 会导致音频跳动，所以仅作为最后的手段
-            // 或者我们可以尝试暂停再播放（体验不好）
-            
-            // 延迟再次设置，确保生效
-            setTimeout(() => {
-                if (bgAudioManager.src) bgAudioManager.playbackRate = rate;
-            }, 100);
-
-        } catch (e) {
-            console.error('设置音频倍速失败', e);
-        }
+          this.audioCtx.playbackRate = rate;
+          if (this.data.isPlaying) {
+            try { this.audioCtx.play(); } catch (_){ }
+          }
+          setTimeout(() => { try { this.audioCtx.playbackRate = rate; } catch (_){ } }, 100);
+        } catch (_){ }
+      }
     }
 
     wx.showToast({
@@ -811,6 +1594,39 @@ Page({
       duration: 1000
     });
   },
+  
+  normalizeBoolean: function(v) {
+    if (v === undefined || v === null) return null;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'number') return v !== 0;
+    const s = String(v).trim().toLowerCase();
+    if (s === 'false' || s === '0' || s === 'no' || s === 'n' || s === '') return false;
+    if (s === 'true' || s === '1' || s === 'yes' || s === 'y') return true;
+    return !!v;
+  },
+  parseDateString: function(str) {
+    if (!str || typeof str !== 'string') return null;
+    let s = str.trim();
+    if (/年|月|日/.test(s)) {
+      s = s.replace('年', '-').replace('月', '-').replace('日', '');
+    }
+    s = s.replace(/\./g, '-').replace(/\//g, '-');
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return d;
+  },
+  isVipValid: function() {
+    const info = wx.getStorageSync('userInfo') || {};
+    const rawVip = (info && typeof info.isVip !== 'undefined') ? info.isVip : wx.getStorageSync('isVip');
+    const isVip = this.normalizeBoolean(rawVip);
+    if (!isVip) return false;
+    const expiryStr = wx.getStorageSync('vipExpiry');
+    if (!expiryStr) return true;
+    const expiry = this.parseDateString(expiryStr);
+    if (!expiry) return true;
+    const now = new Date();
+    return expiry.getTime() >= now.getTime();
+  },
 
   // 切换展开面板
   togglePanel: function(e) {
@@ -833,6 +1649,45 @@ Page({
     });
   },
 
+  // 打开图片页
+  openSongPrint: function(e) {
+    getApp().playClickSound();
+    const songId = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.id;
+    if (!songId) {
+      wx.showToast({ title: '缺少歌曲ID', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/music-print/music-print?songId=${songId}`
+    });
+  },
+
+  startVipPreviewGate: function() {
+    const now = Date.now();
+    let left = 30000;
+    if (this.vipPreviewDeadline && this.vipPreviewDeadline > now) {
+      left = this.vipPreviewDeadline - now;
+    } else {
+      this.vipPreviewDeadline = now + 30000;
+    }
+    if (this.vipPreviewTimer) { try { clearTimeout(this.vipPreviewTimer); } catch (_){ } }
+    this.vipPreviewTimer = setTimeout(() => { this.triggerVipGate(); }, Math.max(0, left));
+  },
+  pauseVipPreviewGate: function() {
+    if (this.vipPreviewTimer) { try { clearTimeout(this.vipPreviewTimer); } catch (_){ } this.vipPreviewTimer = null; }
+  },
+  resetVipPreviewGate: function() {
+    if (this.vipPreviewTimer) { try { clearTimeout(this.vipPreviewTimer); } catch (_){ } this.vipPreviewTimer = null; }
+    this.vipPreviewDeadline = null;
+  },
+  triggerVipGate: function() {
+    this.vipPreviewTimer = null;
+    this.vipPreviewDeadline = null;
+    this.vipPreviewLocked = true;
+    try { if (this.audioCtx) this.audioCtx.pause(); } catch (_){}
+    try { const vc = wx.createVideoContext('myVideo'); vc.pause(); } catch (_){}
+    this.setData({ isPlaying: false, showVipModal: true });
+  },
   // 记录收听数量
   recordListenCount: function() {
     const currentSong = this.data.currentSong;
@@ -841,7 +1696,11 @@ Page({
     
     // 优先使用数据库ID，如果没有则降级使用 title-artist
     const songId = currentSong._id || `${currentSong.title}-${currentSong.artist}`;
-    const today = new Date().toDateString();
+    const dt = new Date();
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    const today = `${y}/${m}/${d}`;
     
     // 组合 Key: 歌曲ID_日期 (按天去重)
     const recordKey = `${songId}_${today}`;

@@ -1,0 +1,41 @@
+<view class="container">
+  <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill"></image>
+  <view class="h-scroll">
+    <view class="h-row" style="transform: translateX(-{{currentIndex * 100}}vw);">
+      <block wx:for="{{printCards}}" wx:key="index">
+        <view class="polaroid-wrapper">
+          <view class="polaroid {{index % 2 === 0 ? 'rotate-left' : 'rotate-right'}}">
+            <view class="photo-frame">
+              <image 
+                class="polaroid-img" 
+                src="{{item.url}}" 
+                mode="aspectFill" 
+                bindtap="previewImage" 
+                data-url="{{item.url}}"
+              ></image>
+            </view>
+            <view class="handwriting">
+              <text>{{item.caption}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+  
+  <view class="control-bar" wx:if="{{printCards.length > 0}}">
+    <view class="nav-btn prev-btn {{currentIndex === 0 ? 'disabled' : ''}}" bindtap="onPrev">
+      <text>❮ PREV</text>
+    </view>
+    <view class="page-indicator">
+      <text>{{currentIndex + 1}} / {{printCards.length}}</text>
+    </view>
+    <view class="nav-btn next-btn {{currentIndex === printCards.length - 1 ? 'disabled' : ''}}" bindtap="onNext">
+      <text>NEXT ❯</text>
+    </view>
+  </view>
+
+  <view wx:if="{{printImages.length === 0}}" class="empty-tip">
+    <text>暂无打印信息</text>
+  </view>
+</view>

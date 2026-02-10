@@ -1,0 +1,30 @@
+<view class="background-container {{themeClass}}">
+  <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
+</view>
+
+<view class="page-container {{themeClass}}">
+  <view class="header">
+    <view class="title-row">
+      <image class="header-icon" src="/assets/images/勋章墙.png" mode="aspectFit" />
+      <text class="header-title">小绵羊的勋章墙</text>
+      <text class="separator">｜</text>
+      <text class="header-sub">记录每次陪伴</text>
+    </view>
+    <text class="header-status">已获得 {{totalCount}} 枚勋章</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-tip">加载中...</view>
+  <view wx:elif="{{!medals.length}}" class="empty-tip">暂无勋章，去陪伴尝试获得吧</view>
+
+  <scroll-view scroll-y="true" class="grid-scroll" wx:if="{{medals.length}}">
+    <view class="grid">
+      <view class="medal-card" wx:for="{{medals}}" wx:key="id" data-id="{{item.id}}" bindtap="openArticle">
+        <view class="medal-badge">
+          <image class="medal-icon" src="{{item.medalUrl}}" mode="aspectFit" />
+        </view>
+        <text class="medal-time">获得时间 {{item.acquiredAtStr}}</text>
+        <text class="medal-action">查看文章</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,80 +1,35 @@
+// pages/vip/vip.js
 Page({
   data: {
-    plans: [],
+    selectedPlan: '',
     selectedPlanId: '',
-    selectedDisplayPrice: '',
-    isVip: false,
-    vipExpiry: ''
+    selectedPrice: '',
+    plans: [],
+    activationCode: ''
   },
-  onLoad: function () {
-    const c1 = new wx.cloud.Cloud({ resourceAppid: 'wx85d92d28575a70f4', resourceEnv: 'cloud1-1gsyt78b92c539ef' });
-    c1.init().then(() => { this.c1 = c1; }).catch(() => { this.c1 = null; }).finally(() => { this.loadPlans(); });
+
+  onLoad: function (options) {
+    this.loadPlans();
   },
+
   onShow: function () {
-    this.refreshVipStatus();
+    // 页面显示时的操作
   },
-  formatPrice: function (val) {
-    if (typeof val === 'number') {
-      if (val >= 100) {
-        return '¥' + (val / 100).toFixed(2).replace(/\.00$/, '');
+
+  getCloud: function () {
+    return new Promise((resolve) => {
+      try {
+        const app = getApp ? getApp() : null;
+        if (app && app.cloud && typeof app.cloud.callFunction === 'function') {
+          resolve(app.cloud);
+          return;
+        }
+        const c1 = new wx.cloud.Cloud({ resourceAppid: 'wx85d92d28575a70f4', resourceEnv: 'cloud1-1gsyt78b92c539ef' });
+        c1.init().then(() => resolve(c1)).catch(() => resolve(wx.cloud));
+      } catch (_) {
+        resolve(wx.cloud);
       }
-      return '¥' + String(val);
-    }
-    const n = Number(val);
-    if (!isNaN(n)) {
-      if (n >= 100) {
-        return '¥' + (n / 100).toFixed(2).replace(/\.00$/, '');
-      }
-      return '¥' + String(n);
-    }
-    return '¥' + String(val || '');
-  },
-  loadPlans: function () {
-    try {
-      const db = this.c1 ? this.c1.database() : wx.cloud.database();
-      db.collection('spring_vip_plans').where({ status: true }).orderBy('displayOrder', 'asc').get().then(res => {
-        const list = (res.data || []).map(p => ({
-          planId: p.planId,
-          name: p.name,
-          priceCents: p.priceCents,
-          displayPrice: this.formatPrice(p.priceCents)
-        }));
-        console.log('vip_plans_db', list);
-        this.setData({ plans: list });
-        if (!list.length) wx.showToast({ title: '暂无上架套餐', icon: 'none' });
-      }).catch((e) => {
-        console.error('vip_load_plans_error', e);
-        wx.showToast({ title: '加载套餐失败', icon: 'none' });
-      });
-    } catch (e) {
-      console.error('vip_load_plans_exception', e);
-      this.loadPlansDirect();
-    }
-  },
-  loadPlansDirect: function () {
-    const db = wx.cloud.database();
-    db.collection('spring_vip_plans').where({ status: true }).orderBy('displayOrder', 'asc').get().then(res => {
-      const list = (res.data || []).map(p => ({
-        planId: p.planId,
-        name: p.name,
-        priceCents: p.priceCents,
-        displayPrice: this.formatPrice(p.priceCents)
-      }));
-      console.log('vip_plans_direct', list);
-      this.setData({ plans: list });
-      if (!list.length) wx.showToast({ title: '暂无上架套餐', icon: 'none' });
-    }).catch((e) => {
-      console.error('vip_load_plans_direct_error', e);
-      wx.showToast({ title: '加载套餐失败', icon: 'none' });
     });
-  },
-  refreshVipStatus: function () {
-    const fn = this.c1 ? this.c1.callFunction.bind(this.c1) : wx.cloud.callFunction.bind(wx.cloud);
-    fn({ name: 'spring_pay', data: { action: 'checkMemberStatus' } }).then(res => {
-      const r = res.result || {};
-      const expiryStr = r.vipExpireTime ? new Date(r.vipExpireTime).toLocaleDateString('zh-CN') : '';
-      this.setData({ isVip: !!r.isVip, vipExpiry: expiryStr });
-    }).catch(() => {});
   },
 
   /**
@@ -105,149 +60,242 @@ Page({
     });
 
     // 调用云函数验证激活码
-    // 注意：这里需要确保使用正确的云环境调用
-    const fn = this.c1 ? this.c1.callFunction.bind(this.c1) : wx.cloud.callFunction.bind(wx.cloud);
-    
-    fn({
-      name: 'spring_activate_code',
-      data: {
-        code: code
-      }
+    this.getCloud().then(cloud => {
+      return cloud.callFunction({ name: 'spring_activate_code', data: { code } });
     }).then(res => {
       wx.hideLoading();
       const result = res.result;
-
-      if (result.success) {
+      if (result && result.success) {
         const days = result.days || 30;
-        
         wx.showModal({
           title: '兑换成功',
           content: `激活码有效！已为您增加 ${days} 天会员权益。`,
           showCancel: false,
-          success: (res) => {
-            if (res.confirm) {
-              // 兑换成功后，刷新会员状态
-              // 这里我们不仅刷新前端显示，还需要调用 checkMemberStatus 来确保后端状态也同步更新
-              // 实际上 spring_activate_code 云函数内部应该只负责标记激活码已用
-              // 会员权益的增加应该在云函数内部一并处理，或者在这里再次调用 spring_pay 激活会员
-              
-              // 补充：夏天的逻辑是 grantVipAccess 前端更新 storage，这里春天是后端中心化的
-              // 所以我们需要确保 spring_activate_code 内部或后续调用能真正增加会员时间
-              
-              // 由于 spring_activate_code 只是返回成功，我们需要在这里手动调用一次模拟的“支付成功”逻辑来激活会员
-              // 或者更优雅地，让 spring_activate_code 内部直接调用 activateMember 逻辑
-              // 但考虑到 spring_activate_code 是独立的，我们可以在这里调用 spring_pay 的 activateMember
-              // 不过 activateMember 需要 out_trade_no，激活码逻辑可能需要调整
-              
-              // 简化方案：我们修改 spring_activate_code 让其直接操作数据库增加会员时间？
-              // 不，为了保持一致性，我们可以在这里调用一个专门的“激活码激活会员”接口，或者复用 spring_pay
-              
-              // 鉴于 spring_pay 中 activateMember 依赖订单号，我们这里暂时用一种简单方式：
-              // 在 spring_activate_code 中直接更新用户表（如果权限允许），或者
-              // 我们假设 spring_activate_code 已经完成了所有工作（包括增加时间）？
-              // 查看夏天的代码，它只是返回 days，然后前端 grantVipAccess 更新本地 storage。
-              // 但春天是依赖云端状态的 (checkMemberStatus)，所以必须更新云端数据库。
-              
-              // **修正方案**：我们需要在 spring_activate_code 中增加“更新用户会员期”的逻辑
-              // 或者在前端调用一个补充云函数。为了简单和安全，建议在 spring_activate_code 中直接处理。
-              // 我稍后会去更新 spring_activate_code 云函数，加上更新 summeruser 表的逻辑。
-              
-              // 假设云函数已经处理好了（稍后我去改），这里只需要刷新状态
-              this.refreshVipStatus();
-              this.setData({ activationCode: '' });
+          success: (m) => {
+            if (m.confirm) {
+              this.grantVipAccess({ type: 'activation', days });
             }
           }
         });
       } else {
-        wx.showToast({
-          title: result.message || '无效的激活码',
-          icon: 'none'
-        });
+        wx.showToast({ title: (result && result.message) || '无效的激活码', icon: 'none' });
       }
     }).catch(err => {
       wx.hideLoading();
-      console.error('激活失败', err);
-      wx.showToast({
-        title: '网络请求失败',
-        icon: 'none'
-      });
+      wx.showToast({ title: '网络请求失败', icon: 'none' });
     });
   },
 
+  /**
+   * 处理激活逻辑 (已废弃，直接在 activateCode 中处理)
+   */
+  // processActivation: function(planType) { ... },
+
+  /**
+   * 授予会员权限（公共方法）
+   * @param {Object} info - 套餐信息或激活信息
+   * info.duration (months) 或 info.days (days)
+   */
+  grantVipAccess: function(info) {
+    wx.setStorageSync('isVip', true);
+
+    // 计算到期时间
+    const now = new Date();
+    let expiryDate;
+    
+    // 如果之前已经是会员且未过期，应该在原基础上顺延
+    const oldExpiryStr = wx.getStorageSync('vipExpiry');
+    if (oldExpiryStr) {
+        const oldExpiry = new Date(oldExpiryStr);
+        // 如果旧的过期时间比现在晚，说明还在有效期内，从旧时间开始顺延
+        if (oldExpiry > now) {
+            // 这里重置为旧时间，以便下面累加
+            now.setTime(oldExpiry.getTime());
+        }
+    }
+
+    if (info.days) {
+      // 按天数增加
+      expiryDate = new Date(now.setDate(now.getDate() + info.days));
+    } else {
+      // 按月数增加 (默认1个月)
+      const duration = info.duration || 1; 
+      expiryDate = new Date(now.setMonth(now.getMonth() + duration));
+    }
+
+    const expiryStr = expiryDate.toLocaleDateString('zh-CN');
+    wx.setStorageSync('vipExpiry', expiryStr);
+
+    // 只有非静默模式才提示 (比如自动续费可能不需要弹窗，这里手动操作都需要)
+    if (info.type !== 'silent') {
+        wx.showToast({
+          title: '开通成功！',
+          icon: 'success',
+          duration: 2000
+        });
+    }
+
+    // 清空激活码输入
+    this.setData({ activationCode: '' });
+
+    // 返回上一页并刷新
+    setTimeout(() => {
+      const pages = getCurrentPages();
+      const prevPage = pages[pages.length - 2];
+      if (prevPage) {
+        prevPage.setData({
+          isVip: true,
+          vipExpiry: expiryStr
+        });
+      }
+      // 如果是tabbar页面不能用navigateBack，这里假设是普通页面
+      // 也可以选择不返回，而是刷新当前页状态
+      wx.navigateBack().catch(() => {
+        // 如果无法返回（例如是tab页），则不操作或跳转到首页
+      });
+    }, 2000);
+  },
+
+  /**
+   * 选择套餐
+   */
   selectPlan: function (e) {
+    if (getApp().playClickSound) getApp().playClickSound();
     const planId = e.currentTarget.dataset.planid;
     const item = (this.data.plans || []).find(x => x.planId === planId);
-    this.setData({ selectedPlanId: planId, selectedDisplayPrice: item ? item.displayPrice : '' });
+
+    this.setData({
+      selectedPlan: planId,
+      selectedPlanId: planId,
+      selectedPrice: item ? (item.displayPrice || '') : ''
+    });
   },
+
+  /**
+   * 开通会员
+   */
   subscribe: function () {
     if (!this.data.selectedPlanId) {
-      wx.showToast({ title: '请先选择套餐', icon: 'none' });
+      wx.showToast({
+        title: '请先选择套餐',
+        icon: 'none'
+      });
       return;
     }
-    const item = (this.data.plans || []).find(x => x.planId === this.data.selectedPlanId);
+
+    const planInfo = (this.data.plans || []).find(x => x.planId === this.data.selectedPlanId);
+
+    // 确认开通弹窗
     wx.showModal({
       title: '确认开通',
-      content: '确认开通' + (item ? item.name : '') + '会员吗？费用：' + (item ? item.displayPrice : ''),
+      content: '确认开通' + (planInfo ? planInfo.name : '') + '会员吗？费用：' + (planInfo ? (planInfo.displayPrice || '') : ''),
       success: (res) => {
         if (res.confirm) {
-          this.createAndPay();
+          // 发起支付
+          this.processPayment(planInfo);
         }
       }
     });
   },
-  createAndPay: function () {
-    wx.showLoading({ title: '发起支付' });
-    const fn = this.c1 ? this.c1.callFunction.bind(this.c1) : wx.cloud.callFunction.bind(wx.cloud);
-    fn({ name: 'spring_pay', data: { planId: this.data.selectedPlanId } }).then(res => {
-      wx.hideLoading();
-      const ret = res.result || {};
-      const pay = ret.data || {};
-      const outNo = ret.out_trade_no || '';
-      if (!pay || !pay.package || !(pay.package.indexOf('prepay_id=') === 0)) {
-        console.error('vip_pay_order_error', ret);
-        wx.showToast({ title: '下单失败', icon: 'none' });
-        return Promise.reject({ err: { errMsg: '下单失败' }, outNo });
-      }
-      return new Promise((resolve, reject) => {
-        wx.requestPayment({
-          timeStamp: pay.timeStamp,
-          nonceStr: pay.nonceStr,
-          package: pay.package,
-          signType: pay.signType,
-          paySign: pay.paySign,
-          success: () => resolve(outNo),
-          fail: (err) => reject({ err, outNo })
-        });
-      });
-    }).then((outNo) => {
-      const fn2 = this.c1 ? this.c1.callFunction.bind(this.c1) : wx.cloud.callFunction.bind(wx.cloud);
-      return fn2({ name: 'spring_pay', data: { action: 'updateMemberOrder', out_trade_no: outNo, status: 'success' } });
-    }).then(() => {
-      const fn3 = this.c1 ? this.c1.callFunction.bind(this.c1) : wx.cloud.callFunction.bind(wx.cloud);
-      return fn3({ name: 'spring_pay', data: { action: 'checkMemberStatus' } });
-    }).then(res => {
-      const r = res.result || {};
-      const expiryStr = r.vipExpireTime ? new Date(r.vipExpireTime).toLocaleDateString('zh-CN') : '';
-      this.setData({ isVip: !!r.isVip, vipExpiry: expiryStr });
-      wx.showToast({ title: '开通成功', icon: 'success' });
-    }).catch(async (payload) => {
-      const outNo = payload && payload.outNo;
-      const err = payload && payload.err;
-      if (err) console.error('vip_pay_fail', err);
-      
-      let status = 'failed';
-      // 判断是否为用户取消支付
-      if (err && err.errMsg && err.errMsg.indexOf('cancel') > -1) {
-        status = 'cancelled';
-      }
 
-      if (outNo) {
-        try {
-          const fn4 = this.c1 ? this.c1.callFunction.bind(this.c1) : wx.cloud.callFunction.bind(wx.cloud);
-          await fn4({ name: 'spring_pay', data: { action: 'updateMemberOrder', out_trade_no: outNo, status: status } });
-        } catch (e) {}
-      }
-      wx.showToast({ title: status === 'cancelled' ? '支付已取消' : '支付未完成', icon: 'none' });
+  /**
+   * 处理支付
+   */
+  processPayment: function (planInfo) {
+    wx.showLoading({
+      title: '正在创建订单...'
     });
+
+    this.getCloud().then(cloud => {
+      return cloud.callFunction({ name: 'spring_pay', data: { planId: this.data.selectedPlanId } });
+    }).then(res => {
+      const result = res.result || {};
+      if (result && result.data) {
+        wx.hideLoading();
+        wx.requestPayment({
+          ...result.data,
+          success: () => {
+            this.checkPaymentStatus(result.out_trade_no, planInfo);
+          },
+          fail: (payErr) => {
+            if (payErr && payErr.errMsg && payErr.errMsg.indexOf('cancel') > -1) {
+              wx.showToast({ title: '已取消支付', icon: 'none' });
+              this.updateOrderStatus(result.out_trade_no, 'cancelled');
+            } else {
+              wx.showToast({ title: '支付失败', icon: 'none' });
+            }
+          }
+        });
+      } else {
+        wx.hideLoading();
+        wx.showToast({ title: result.errmsg || '创建订单失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '网络请求失败', icon: 'none' });
+    });
+  },
+
+  /**
+   * 更新订单状态
+   */
+  updateOrderStatus: function(outTradeNo, status) {
+      this.getCloud().then(cloud => {
+        return cloud.callFunction({
+          name: 'spring_pay',
+          data: { action: 'updateMemberOrder', out_trade_no: outTradeNo, status }
+        });
+      }).catch(() => {});
+  },
+
+  /**
+   * 检查支付状态并授予权益
+   */
+  checkPaymentStatus: function(outTradeNo, planInfo) {
+      wx.showLoading({ title: '确认状态中...' });
+      
+      this.getCloud().then(cloud => {
+        return cloud.callFunction({
+          name: 'spring_pay',
+          data: { action: 'updateMemberOrder', out_trade_no: outTradeNo, status: 'success' }
+        });
+      }).then(res => {
+        wx.hideLoading();
+        if (res.result && res.result.success) {
+          this.grantVipAccess(planInfo);
+        } else {
+          wx.showToast({ title: '状态更新失败，请联系客服', icon: 'none' });
+        }
+      }).catch(() => {
+        wx.hideLoading();
+        wx.showToast({ title: '网络异常', icon: 'none' });
+      });
+  },
+
+  loadPlans: function () {
+    this.getCloud().then(cloud => {
+      return cloud.callFunction({ name: 'spring_pay', data: { action: 'getPlans' } });
+    }).then(res => {
+      const arr = (res.result && res.result.data) ? res.result.data : [];
+      const list = arr.map(p => {
+        let displayPrice = '';
+        if (typeof p.priceCents === 'number') {
+          displayPrice = '¥' + String(p.priceCents);
+        } else if (typeof p.priceYuan === 'number') {
+          displayPrice = '¥' + String(p.priceYuan);
+        } else if (typeof p.price === 'number') {
+          displayPrice = '¥' + String(p.price);
+        } else if (typeof p.displayPrice === 'string') {
+          displayPrice = p.displayPrice;
+        }
+        return {
+          planId: p.planId,
+          name: p.name,
+          priceCents: p.priceCents,
+          displayPrice
+        };
+      });
+      this.setData({ plans: list });
+    }).catch(() => {});
   }
 });

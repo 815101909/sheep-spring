@@ -1,8 +1,10 @@
+const themeManager = require('../utils/themeManager');
 Component({
   data: {
     selected: 0,
     color: "#7A7E83",
     selectedColor: "#87CEEB",
+    themeClass: 'light',
     list: [
       {
         pagePath: "/pages/garden/garden",
@@ -41,6 +43,7 @@ Component({
         }
       }
     }
+    this.setData({ themeClass: themeManager.isDark() ? 'dark' : 'light' });
   },
   methods: {
     switchTab(e) {
@@ -48,6 +51,9 @@ Component({
       const data = e.currentTarget.dataset;
       const url = data.path;
       wx.switchTab({ url });
+    },
+    updateTheme() {
+      this.setData({ themeClass: themeManager.isDark() ? 'dark' : 'light' });
     }
   }
 });

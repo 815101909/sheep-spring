@@ -3,37 +3,114 @@
 <view class="background-container">
   <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
 </view>
+<canvas type="2d" id="compressCanvas" style="position: fixed; top: -9999px; left: -9999px; width: 750px; height: 1334px;"></canvas>
+<!-- 固定右下角形象（在模态或动画期间隐藏） -->
+<image class="page-avatar" wx:if="{{isSmallCard && !(showWorryModal || isAnimating)}}" src="{{currentAvatar || '/assets/images/小卡片默认形象.png'}}" mode="aspectFit" bindtap="onCharacterTap" />
+<view class="page-avatar-tip" wx:if="{{isSmallCard && showAvatarTip && !(showWorryModal || isAnimating)}}">
+  <text class="page-avatar-tip-text">坚持每日打卡，解锁更多形象</text>
+  <view class="page-avatar-tip-arrow"></view>
+</view>
+<!-- 全局宝盒弹层（不受滚动容器影响） -->
+<view class="treasure-modal" wx:if="{{showTreasureCard}}">
+  <view class="treasure-mask" bindtap="closeTreasure" catchtouchmove="noop"></view>
+  <view class="treasure-card reveal-animate" catchtap="noop" catchtouchmove="noop">
+    <image class="treasure-image" src="{{treasureCardType==='success' ? successCardUrl : errorCardUrl}}" mode="widthFix"></image>
+    <view class="treasure-actions">
+      <view class="audio-btn" bindtap="closeTreasure">
+        <text class="audio-text">关闭</text>
+      </view>
+    </view>
+  </view>
+</view>
+<!-- 答题成功后待拆盲盒弹层 -->
+<view class="treasure-ready" wx:if="{{showTreasureReady}}">
+  <view class="treasure-mask" bindtap="openTreasureBox" catchtouchmove="noop"></view>
+  <view class="treasure-ready-card" catchtap="noop" catchtouchmove="noop">
+    <view class="treasure-box" bindtap="openTreasureBox">
+      <image class="treasure-box-image" src="/assets/images/盲盒.png" mode="aspectFit" />
+    </view>
+    <text class="treasure-box-hint">点击盲盒，查看结果</text>
+  </view>
+</view>
+
+<!-- 烦恼输入模态框 -->
+<view class="custom-modal-mask" wx:if="{{showWorryModal}}" bindtap="closeWorryModal">
+  <view class="custom-modal-content worry-modal-content" catchtap="stopProp">
+    <image class="modal-bg" src="/assets/images/splash-bg.png" mode="aspectFill" />
+    <view class="modal-body">
+      <view class="modal-title">把烦恼告诉小绵羊</view>
+      <textarea class="worry-input" placeholder="在这里写下今天的烦恼..." bindinput="onWorryInput" value="{{worryText}}" maxlength="50"></textarea>
+      <view class="action-btn-row">
+        <view class="voice-btn-container" catchtouchstart="startRecord" catchtouchend="stopRecord" hover-class="voice-btn-hover">
+          <text class="voice-icon">🎤</text>
+          <text class="voice-text">{{isRecording ? '松开' : '按住说话'}}</text>
+        </view>
+        <view class="modal-btn" bindtap="submitWorry">一 起 弹 走 烦 恼 吧</view>
+      </view>
+    </view>
+  </view>
+  </view>
+
+<!-- 动画层 -->
+<view class="animation-layer" wx:if="{{isAnimating}}">
+  <view class="running-sheep-container">
+    <image class="running-sheep-image" src="/assets/images/小绵羊.png" mode="aspectFit" />
+  </view>
+  <view class="falling-char" wx:for="{{fallingChars}}" wx:key="index" style="left:{{item.left}}%; font-size:{{item.size}}rpx; animation-duration:{{item.duration}}s; animation-delay:{{item.delay}}s; --bounce-dir:{{item.bounceDir}};">
+    {{item.char}}
+  </view>
+  <view class="plants-container">
+    <view class="plant plant-type-{{item.type}} plant-color-{{item.colorIndex}}" wx:for="{{plants}}" wx:key="id" style="left: {{item.left}}%; --plant-scale: {{item.scale}}; --plant-height: {{item.height}}rpx;">
+      <view class="stem"></view>
+      <view class="leaf leaf-left"></view>
+      <view class="leaf leaf-right"></view>
+      <view class="leaf leaf-long"></view>
+      <view class="flower">
+        <view class="petal"></view>
+        <view class="petal"></view>
+        <view class="petal"></view>
+        <view class="petal"></view>
+        <view class="petal"></view>
+        <view class="petal"></view>
+        <view class="petal"></view>
+        <view class="petal"></view>
+      </view>
+    </view>
+  </view>
+  <view class="encouraging-text" wx:if="{{showEncouragingText}}">{{encouragingText}}</view>
+  <view class="close-animation-btn" bindtap="closeAnimation">×</view>
+</view>
 
 <!-- 侧边栏风格选择 -->
 <view class="sidebar" wx:if="{{!isSmallCard}}">
   <view class="mode-selector">
-    <view class="mode-btn {{currentStyleIndex === 0 ? 'active main-active' : ''}}" bindtap="switchStyle" data-index="0">
-      <!-- 主体式图片 -->
-      <view class="style-image-container {{currentStyleIndex === 0 ? 'visible' : ''}}">
-        <image class="style-image" src="/assets/images/主体式.png" mode="aspectFit" />
-      </view>
-      <text class="mode-text">主体式</text>
-    </view>
-    <view class="mode-btn {{currentStyleIndex === 1 ? 'active qa-active' : ''}}" bindtap="switchStyle" data-index="1">
+    <view class="mode-btn {{currentStyleIndex === 0 ? 'active qa-active' : ''}}" bindtap="switchStyle" data-index="0">
       <!-- 问答式图片 -->
-      <view class="style-image-container {{currentStyleIndex === 1 ? 'visible' : ''}}">
+      <view class="style-image-container {{currentStyleIndex === 0 ? 'visible' : ''}}">
         <image class="style-image" src="/assets/images/问答式.png" mode="aspectFit" />
       </view>
-      <text class="mode-text">问答式</text>
+      <text class="mode-text">知识探秘</text>
+    </view>
+    <view class="mode-btn {{currentStyleIndex === 1 ? 'active main-active' : ''}}" bindtap="switchStyle" data-index="1">
+      <!-- 主体式图片 -->
+      <view class="style-image-container {{currentStyleIndex === 1 ? 'visible' : ''}}">
+        <image class="style-image" src="/assets/images/主体式.png" mode="aspectFit" />
+      </view>
+      <text class="mode-text">亲子同行</text>
     </view>
     <view class="mode-btn {{currentStyleIndex === 2 ? 'active inspire-active' : ''}}" bindtap="switchStyle" data-index="2">
       <!-- 加油式图片 -->
       <view class="style-image-container {{currentStyleIndex === 2 ? 'visible' : ''}}">
         <image class="style-image" src="/assets/images/启发式.png" mode="aspectFit" />
       </view>
-      <text class="mode-text">加油式</text>
+      <text class="mode-text">心语信箱</text>
     </view>
     <view class="mode-btn {{currentStyleIndex === 3 ? 'active fashion-active' : ''}}" bindtap="switchStyle" data-index="3">
       <!-- 梦幻式图片 -->
       <view class="style-image-container {{currentStyleIndex === 3 ? 'visible' : ''}}">
         <image class="style-image" src="/assets/images/梦幻式.png" mode="aspectFit" />
       </view>
-      <text class="mode-text">梦幻式</text>
+      <text class="mode-text">成长目标</text>
     </view>
   </view>
 </view>
@@ -46,47 +123,36 @@
   <view class="action-btn favorite-btn {{isFavorited ? 'favorited' : ''}}" bindtap="toggleFavorite">
     <view class="css-heart {{isFavorited ? 'filled' : ''}}"></view>
   </view>
+  <view class="action-btn print-btn" bindtap="goToPrint">
+    <view class="css-print"></view>
+  </view>
 </view>
 
 <!-- 主内容区域 -->
-<view class="main-content {{isSmallCard ? 'a4-mode' : ''}}">
+  <view class="main-content {{isSmallCard ? 'a4-mode' : ''}}">
   <!-- 小卡片A4区域 -->
   <view class="a4-container {{isSmallCard ? 'active' : ''}}" wx:if="{{isSmallCard}}">
     <!-- 新增：顶部操作栏 -->
-    <view class="a4-header-bar">
-      <view class="a4-date-badge">
-        <image class="date-icon" src="/assets/images/日期前小羊.png" mode="aspectFit" />
-        <text>{{article.date}}</text>
+    <view class="a4-top">
+      <view class="a4-top-wrap">
+        <image class="a4-top-image" src="{{topImageSmallCardUrl || topImageSmallCardCloudId || currentAvatar || '/assets/images/小卡片默认形象.png'}}" mode="widthFix" />
+        <view class="a4-top-overlay">
+          <view class="a4-date-badge">
+            <image class="date-icon" src="/assets/images/日期前小羊.png" mode="aspectFit" />
+            <text>{{article.date}}</text>
+          </view>
+        </view>
       </view>
-      <view class="a4-action-btn favorite-btn {{isFavorited ? 'favorited' : ''}}" bindtap="toggleFavorite">
-        <view class="css-heart {{isFavorited ? 'filled' : ''}}"></view>
-      </view>
-    </view>
-
-    <view class="a4-paper">
-      <!-- A4区域内容 - 空白区域，等待后台上传卡片 -->
-      <view class="a4-content">
-        <!-- 填色画布 -->
-        <view class="loading-tip" wx:if="{{isCanvasLoading}}">正在准备画板...</view>
-        <canvas type="2d" id="coloringCanvas" class="coloring-canvas" bindtap="onCanvasTap" style="width: 100%; height: {{canvasHeight}}px;" wx:if="{{article.a4Image}}"></canvas>
-        <view wx:else class="no-image-tip">暂无图片</view>
+      <text class="a4-top-text">如果有什么不开心的就弹走吧！</text>
+      <view class="a4-actions">
+        <view class="audio-btn a4-primary-btn" bindtap="openWorryModal">
+          <text class="audio-text">弹走烦恼</text>
+        </view>
       </view>
     </view>
 
-    <!-- 颜料板 -->
-    <view class="palette-container" wx:if="{{article.a4Image}}">
-      <view class="palette-colors">
-         <view class="color-item {{selectedColor === item ? 'active' : ''}}" 
-               wx:for="{{colors}}" 
-               wx:key="*this" 
-               style="background-color: {{item}}" 
-               bindtap="selectColor" 
-               data-color="{{item}}"></view>
-      </view>
-    </view>
+    
 
-    <!-- 小卡片默认形象PNG - 悬浮在A4区域上方 -->
-    <image class="a4-default-image" src="{{currentAvatar || '/assets/images/小卡片默认形象.png'}}" mode="aspectFit" bindtap="onDefaultImageTap" />
   </view>
 
   <!-- 提示便签 - 移到最外层，避免被截断 -->
@@ -97,128 +163,42 @@
 
   <!-- 内容面板容器 -->
   <view class="content-panels" wx:elif="{{!isSmallCard}}">
-    <!-- 主体式面板 -->
-    <view class="content-panel article-panel {{currentStyleIndex === 0 ? 'active' : ''}}">
-      <scroll-view class="panel-scroll" scroll-y="true">
-        <view class="article-style">
-          <!-- 标题 -->
-          <view class="article-title-section">
-            <text class="article-title font-size-{{fontSizeIndex}}">{{article.title}}</text>
-          </view>
-
-          <!-- 一只绵羊的春天 + 日期 -->
-          <view class="article-meta">
-            <text class="sheep-summer">一只绵羊的春天</text>
-            <text class="article-date">{{article.date}}</text>
-          </view>
-
-          <!-- 封面图片 -->
-          <image class="article-cover" src="{{article.cover || ''}}" mode="aspectFill" />
-
-          <!-- 文章内容 -->
-          <view class="article-content">
-            <block wx:if="{{article.contentWithPinyin}}">
-              <view class="pinyin-char-container">
-                <view class="pinyin-char-group {{item.isLineBreak ? 'line-break' : ''}}" wx:for="{{article.contentWithPinyin}}" wx:key="index">
-                   <block wx:if="{{!item.isLineBreak}}">
-                      <text class="pinyin-text font-size-{{fontSizeIndex}}">{{item.pinyin}}</text>
-                      <text class="char-text font-size-{{fontSizeIndex}}">{{item.char}}</text>
-                   </block>
-                </view>
-              </view>
-            </block>
-            <block wx:else>
-              <text class="article-pinyin font-size-{{fontSizeIndex}}" wx:if="{{article.contentPinyin}}">{{article.contentPinyin}}</text>
-              <text class="article-text font-size-{{fontSizeIndex}}">{{article.content}}</text>
-            </block>
-          </view>
-
-          <!-- 音频播放按钮 (移至底部) -->
-          <view class="audio-control-section" wx:if="{{article.contentAudio}}">
-             <view class="audio-btn" bindtap="playAudio" data-url="{{article.contentAudio}}" data-type="content">
-               <image class="audio-icon" src="{{(isPlaying && playingType === 'content') ? '/assets/images/stop.png' : '/assets/images/play.png'}}" mode="aspectFit" />
-               <text class="audio-text">{{(isPlaying && playingType === 'content') ? '暂停播放' : '点击收听'}}</text>
-             </view>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- 问答式面板 -->
-    <view class="content-panel qa-panel {{currentStyleIndex === 1 ? 'active' : ''}}">
-      <scroll-view class="panel-scroll" scroll-y="true">
-        <view class="qa-style">
-          <!-- 标题 -->
-          <view class="qa-title-section">
-            <text class="qa-title font-size-{{fontSizeIndex}}">{{article.qaTitle || '关于绵羊的常见问题'}}</text>
-          </view>
-
-          <!-- 一只绵羊的春天 + 日期 -->
-          <view class="qa-meta">
-            <text class="sheep-summer">一只绵羊的春天</text>
-            <text class="qa-date">{{article.date}}</text>
-          </view>
-
-          <!-- 封面图片 -->
-          <image class="qa-image" src="{{article.qaImage || ''}}" mode="aspectFill" />
-
-          <!-- 问答内容 -->
-          <view class="qa-content">
-            <block wx:if="{{article.qaContentWithPinyin}}">
-              <view class="pinyin-char-container">
-                <view class="pinyin-char-group {{item.isLineBreak ? 'line-break' : ''}}" wx:for="{{article.qaContentWithPinyin}}" wx:key="index">
-                   <block wx:if="{{!item.isLineBreak}}">
-                      <text class="pinyin-text font-size-{{fontSizeIndex}}">{{item.pinyin}}</text>
-                      <text class="char-text font-size-{{fontSizeIndex}}">{{item.char}}</text>
-                   </block>
-                </view>
-              </view>
-            </block>
-            <text class="qa-text font-size-{{fontSizeIndex}}" wx:else>{{article.qaContent}}</text>
-          </view>
-
-          <!-- 音频播放按钮 (移至底部) -->
-          <view class="audio-control-section" wx:if="{{article.qaAudio}}">
-             <view class="audio-btn" bindtap="playAudio" data-url="{{article.qaAudio}}" data-type="qa">
-               <image class="audio-icon" src="{{(isPlaying && playingType === 'qa') ? '/assets/images/stop.png' : '/assets/images/play.png'}}" mode="aspectFit" />
-               <text class="audio-text">{{(isPlaying && playingType === 'qa') ? '暂停播放' : '点击收听'}}</text>
-             </view>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- 加油式面板 -->
-    <view class="content-panel inspire-panel {{currentStyleIndex === 2 ? 'active' : ''}}">
-      <scroll-view class="panel-scroll" scroll-y="true">
+    <view class="content-panel article-panel {{currentStyleIndex === 1 ? 'active' : ''}}">
+      <scroll-view class="panel-scroll" scroll-y="true" enable-flex="true">
         <view class="inspiration-style">
           <view class="card-container">
-            <!-- 虚线上方：图片区域 -->
             <view class="card-image-section">
-              <image class="card-image" src="{{article.inspireImage || ''}}" mode="aspectFill" />
+              <image class="card-image" src="{{topImageArticleUrl || article.cover || ''}}" mode="aspectFill" />
+              <view class="image-subtitle">
+                <text class="image-subtitle-text">今日小任务</text>
+              </view>
             </view>
-
-            <!-- 虚线分隔 -->
             <view class="card-divider"></view>
-
-            <!-- 虚线下方：文字区域 -->
-            <view class="card-text-section">
-              <block wx:if="{{article.inspireTextWithPinyin}}">
-                <view class="pinyin-char-container">
-                  <view class="pinyin-char-group {{item.isLineBreak ? 'line-break' : ''}}" wx:for="{{article.inspireTextWithPinyin}}" wx:key="index">
-                     <block wx:if="{{!item.isLineBreak}}">
-                        <text class="pinyin-text font-size-{{fontSizeIndex}}">{{item.pinyin}}</text>
-                        <text class="char-text font-size-{{fontSizeIndex}}">{{item.char}}</text>
-                     </block>
+              <view class="card-text-section">
+              <text class="card-content font-size-{{fontSizeIndex}}">{{article.subtitle}}</text>
+              <view class="parent-photo-box" style="margin-top: 16rpx;" bindtap="chooseParentPhoto">
+                <block wx:if="{{parentTaskPhoto}}">
+                  <image class="parent-photo-image" src="{{parentTaskPhoto}}" mode="aspectFill" bindlongpress="openParentPhotoActions" />
+                </block>
+                <block wx:else>
+                  <view class="parent-photo-placeholder">
+                    <view class="camera-icon"></view>
+                    <text class="placeholder-title">暂无照片</text>
+                    <text class="placeholder-sub">拍一张开始打卡吧</text>
                   </view>
+                </block>
+              </view>
+              <view style="margin-top: 16rpx;">
+                <view class="audio-btn parent-action-btn" bindtap="submitParentTask">
+                  <text class="audio-text">提交任务</text>
                 </view>
-              </block>
-              <text class="card-content font-size-{{fontSizeIndex}}" wx:else>{{article.inspireText || '就像绵羊的羊毛在夏天被剪去，只为在冬天来临前重新生长得更加强韧；我们有时也需要卸下负担，以便以更轻盈的姿态迎接新的挑战。'}}</text>
-            
-              <!-- 音频播放按钮 (移至文字底部) -->
-              <view class="audio-control-mini" wx:if="{{article.inspireAudio}}" bindtap="playAudio" data-url="{{article.inspireAudio}}" data-type="inspire" style="margin-top: 20rpx; margin-bottom: 0;">
-                 <image class="audio-icon-mini" src="{{(isPlaying && playingType === 'inspire') ? '/assets/images/stop.png' : '/assets/images/play.png'}}" mode="aspectFit" />
-                 <text class="audio-text-mini">{{(isPlaying && playingType === 'inspire') ? '暂停' : '收听'}}</text>
+              </view>
+              <view class="medal-row" wx:if="{{parentBadgeEarned}}" style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:16rpx;">
+                <view class="medal-badge" style="width:300rpx;height:300rpx;margin:0 auto;border-radius:50%;">
+                  <image class="medal-icon" src="{{article.medal || '/assets/images/会员.png'}}" mode="aspectFit" style="width:280rpx;height:280rpx;border-radius:50%;" />
+                </view>
+                <text class="card-content font-size-{{fontSizeIndex}}" style="text-align:center;color:#7f8c8d;">获得时间 {{parentBadgeAcquiredAtStr}}</text>
+                <text class="card-content font-size-{{fontSizeIndex}}" style="text-align:center;">已获得勋章</text>
               </view>
             </view>
           </view>
@@ -226,37 +206,175 @@
       </scroll-view>
     </view>
 
-    <!-- 梦幻式面板 -->
-    <view class="content-panel fashion-panel {{currentStyleIndex === 3 ? 'active' : ''}}">
-      <scroll-view class="panel-scroll" scroll-y="true">
-        <view class="fashion-style">
+    <view class="content-panel qa-panel {{currentStyleIndex === 0 ? 'active' : ''}}">
+      <scroll-view class="panel-scroll" scroll-y="{{!(showQuizModal || showTreasureCard || showTreasureReady)}}" enable-flex="true">
+        <view class="inspiration-style">
           <view class="card-container">
-            <!-- 虚线上方：图片区域 -->
             <view class="card-image-section">
-              <image class="card-image" src="{{article.dreamyImage || ''}}" mode="aspectFill" />
+              <image class="card-image" src="{{topImageQaUrl || article.inspireImage || article.cover || ''}}" mode="aspectFill" />
+              <view class="image-subtitle">
+                <text class="image-subtitle-text">今天你发现了什么趣味知识？</text>
+              </view>
             </view>
-
-            <!-- 虚线分隔 -->
             <view class="card-divider"></view>
-
-            <!-- 虚线下方：文字区域 -->
             <view class="card-text-section">
-              <block wx:if="{{article.dreamyContentWithPinyin}}">
-                <view class="pinyin-char-container">
-                  <view class="pinyin-char-group {{item.isLineBreak ? 'line-break' : ''}}" wx:for="{{article.dreamyContentWithPinyin}}" wx:key="index">
-                     <block wx:if="{{!item.isLineBreak}}">
-                        <text class="pinyin-text font-size-{{fontSizeIndex}}">{{item.pinyin}}</text>
-                        <text class="char-text font-size-{{fontSizeIndex}}">{{item.char}}</text>
-                     </block>
+              <view class="qa-article-meta">
+                <image class="progress-sheep" wx:if="{{(isPlaying || isPaused) && playingType === 'qa'}}" src="/assets/images/小绵羊.png" mode="aspectFit" style="left:{{sheepX}}px; top:{{sheepY}}px; transform: rotate({{sheepRotate}}deg) scaleX({{sheepScaleX}});" />
+                <view class="qa-article-left">
+                  <text class="qa-article-title font-size-{{fontSizeIndex}}">{{article.title}}</text>
+                  <view class="qa-bottom-row" catchtap="toggleQaAudio">
+                    <view class="qa-play-btn">
+                      <view class="qa-play-icon {{isPlaying && playingType === 'qa' ? 'playing' : ''}}"></view>
+                    </view>
+                    <text class="qa-article-date">{{article.publishDateText || article.date}}</text>
                   </view>
                 </view>
-              </block>
-              <text class="card-content font-size-{{fontSizeIndex}}" wx:else>{{article.dreamyContent || '当你读到这张明信片时，我希望你能感受到这个夏天的宁静与美好。就像那只在草原上漫步的绵羊，我们都需要偶尔放慢脚步，感受阳光的温暖，微风的轻抚，和自然界的韵律。'}}</text>
-            
-              <!-- 音频播放按钮 (移至文字底部) -->
-              <view class="audio-control-mini" wx:if="{{article.dreamyAudio}}" bindtap="playAudio" data-url="{{article.dreamyAudio}}" data-type="dreamy" style="margin-top: 20rpx; margin-bottom: 0;">
-                 <image class="audio-icon-mini" src="{{(isPlaying && playingType === 'dreamy') ? '/assets/images/stop.png' : '/assets/images/play.png'}}" mode="aspectFit" />
-                 <text class="audio-text-mini">{{(isPlaying && playingType === 'dreamy') ? '暂停' : '收听'}}</text>
+                <image class="qa-article-cover" src="{{article.cover || ''}}" mode="aspectFill" />
+              </view>
+              <view style="margin-top: 16rpx;">
+                <block wx:if="{{article.contentWithPinyin}}">
+                  <view class="pinyin-char-container">
+                    <view class="pinyin-char-group {{item.isLineBreak ? 'line-break' : ''}} {{item.isIndent ? 'indent-marker-' + fontSizeIndex : ''}}" wx:for="{{article.contentWithPinyin}}" wx:key="index">
+                      <block wx:if="{{!item.isLineBreak}}">
+                        <text class="pinyin-text font-size-{{fontSizeIndex}}">{{item.pinyin}}</text>
+                        <text class="char-text font-size-{{fontSizeIndex}}">{{item.char}}</text>
+                      </block>
+                    </view>
+                  </view>
+                </block>
+                <text class="card-content font-size-{{fontSizeIndex}}" style="text-align: left; text-indent: 2em;" wx:else>{{article.content}}</text>
+              </view>
+              <view style="margin-top: 24rpx;">
+                <view class="quiz-section">
+                  <view class="audio-btn primary" bindtap="startQuiz">
+                    <text class="audio-text">开始答题</text>
+                  </view>
+                </view>
+                <view class="quiz-modal" wx:if="{{showQuizModal}}">
+                  <view class="quiz-mask" bindtap="closeQuiz" catchtouchmove="noop"></view>
+                  <view class="quiz-card" catchtap="noop" catchtouchmove="noop">
+                    <image class="quiz-bg" src="{{quizBgSrc}}" mode="aspectFill"></image>
+                    <view class="quiz-header">
+                      <text class="quiz-title font-size-{{fontSizeIndex}}">{{article.qaContent || '选择你认为正确的选项'}}</text>
+                    </view>
+                    <view class="quiz-options">
+                      <view class="quiz-option" wx:for="{{quizOptionList}}" wx:key="key">
+                        <view class="audio-btn quiz-option-btn {{quizSelected===item.key?'active':''}}" bindtap="selectQuizOption" data-value="{{item.key}}">
+                          <text class="quiz-option-label">{{item.key}}</text>
+                          <text class="quiz-option-text">{{item.text}}</text>
+                        </view>
+                      </view>
+                    </view>
+                    <view class="quiz-actions">
+                      <view class="audio-btn primary" bindtap="submitQuiz">
+                        <text class="audio-text">提交答案</text>
+                      </view>
+                      <view class="audio-btn" bindtap="closeQuiz">
+                        <text class="audio-text">关闭</text>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="content-panel inspire-panel {{currentStyleIndex === 2 ? 'active' : ''}}">
+      <scroll-view class="panel-scroll" scroll-y="true" enable-flex="true">
+        <view class="inspiration-style">
+          <view class="card-container">
+            <view class="card-image-section">
+              <image class="card-image" src="{{topImageInspireUrl || article.dreamyImage || article.cover || ''}}" mode="aspectFill" />
+              <view class="image-subtitle">
+                <text class="image-subtitle-text">有什么想对爸爸妈妈说的吗？</text>
+              </view>
+            </view>
+            <view class="card-divider"></view>
+            <view class="card-text-section">
+              <!-- 留言输入区 -->
+      <view class="mailbox-input" wx:if="{{!hasCommented}}">
+        <textarea class="mailbox-textarea" placeholder="写下你的心语..." placeholder-class="mailbox-placeholder" value="{{mailboxInput}}" bindinput="onMailboxInput" maxlength="45" />
+        <view class="word-count">{{mailboxInput.length}}/45</view>
+      </view>
+      <view class="mailbox-submit" wx:if="{{!hasCommented}}">
+        <view class="audio-btn" bindtap="addMailboxMessage">
+          <text class="audio-text">提交留言</text>
+        </view>
+      </view>
+
+      <!-- 留言展示区（仅显示自己的留言） -->
+      <view class="my-comment-section" wx:if="{{hasCommented && myComment}}">
+        <view class="my-comment-bubble">
+          <text class="my-comment-text font-size-{{fontSizeIndex}}">{{myComment.text}}</text>
+        </view>
+      </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="content-panel fashion-panel {{currentStyleIndex === 3 ? 'active' : ''}}">
+      <scroll-view class="panel-scroll" scroll-y="true" enable-flex="true">
+        <view class="inspiration-style">
+          <view class="card-container">
+            <view class="card-image-section">
+              <image class="card-image" src="{{topImageFashionUrl || article.qaImage || article.cover || ''}}" mode="aspectFill" />
+              <view class="image-subtitle">
+                <text class="image-subtitle-text">给未来的自己设置一个提醒吧！</text>
+              </view>
+            </view>
+            <view class="card-divider"></view>
+            <view class="card-text-section">
+              <view class="tm-row">
+                <text class="tm-label">收信时间</text>
+                <picker mode="date" bindchange="onDateChange" value="{{selectedDate}}">
+                  <view class="tm-picker">{{selectedDate || '请选择日期'}}</view>
+                </picker>
+              </view>
+              <view class="tm-column">
+                <text class="tm-label-top">对未来的自己说：</text>
+                <view class="tm-textarea-wrapper">
+                  <textarea class="tm-textarea" placeholder="输入提醒内容..." placeholder-class="tm-placeholder" value="{{reminderContent}}" bindinput="onReminderInput" />
+                </view>
+              </view>
+              <view class="tm-actions">
+                <view class="audio-btn" bindtap="toggleReminderRecord">
+                  <text class="audio-text">{{isRecording ? '停止转文字' : '说话转文字'}}</text>
+                </view>
+                <view class="audio-btn" bindtap="saveReminder">
+                  <text class="audio-text">提交提醒</text>
+                </view>
+              </view>
+              <view class="rm-section">
+                <image class="rm-bg-image" src="/assets/images/splash-bg.png" mode="aspectFill" />
+                <text class="section-title card-content font-size-{{fontSizeIndex}}">提醒列表</text>
+                <view class="rm-item {{item.notified ? 'rm-done' : ''}}" wx:for="{{reminders}}" wx:key="id">
+                  <view class="rm-top">
+                    <view class="rm-top-left">
+                      <view class="rm-dot"></view>
+                      <text class="rm-time">{{item.dueAtStr || item.createdAtStr}}</text>
+                    </view>
+                    <view class="rm-top-right">
+                      <view class="rm-status">
+                        <text class="rm-status-text {{item.result === 'done' ? 'status-done' : (item.result === 'missed' ? 'status-missed' : 'status-waiting')}}">
+                          {{item.result === 'done' ? '已完成' : (item.result === 'missed' ? '未完成' : (item.notified ? '已提醒' : '待提醒'))}}
+                        </text>
+                      </view>
+                      <view class="rm-actions">
+                        <view class="audio-btn" bindtap="removeReminder" data-id="{{item.id}}">
+                          <text class="audio-text">删除</text>
+                        </view>
+                      </view>
+                    </view>
+                  </view>
+                  <view class="rm-content">
+                    <text class="rm-text font-size-{{fontSizeIndex}}">{{item.content}}</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>

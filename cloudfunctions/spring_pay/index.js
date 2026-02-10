@@ -23,6 +23,11 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
   const openId = wxContext.FROM_OPENID || wxContext.OPENID;
   const { action, description, amount, planId, planName } = event;
+  const debug = !!(event && event.debug);
+  const debugLog = [];
+  const pushLog = (v) => {
+    try { debugLog.push(typeof v === 'string' ? v : JSON.stringify(v)); } catch (_) {}
+  };
 
   // 如果有 action 参数，路由到相应的处理函数
   if (action) {
@@ -50,8 +55,14 @@ exports.main = async (event, context) => {
     publicKey: 'PUB_KEY_ID_0117231717342025080600382090000403'
   };
   
-  const apiclientCert = fs.readFileSync(__dirname + '/apiclient_cert.pem');
-  const apiclientKey = fs.readFileSync(__dirname + '/apiclient_key.pem');
+  const readPem = (p) => {
+    try { return fs.readFileSync(p); } catch (_) { return null; }
+  };
+  const apiclientCert = readPem(__dirname + '/apiclient_cert.pem') || (process.env.WECHATPAY_PLATFORM_CERT ? Buffer.from(process.env.WECHATPAY_PLATFORM_CERT) : null);
+  const apiclientKey = readPem(__dirname + '/apiclient_key.pem') || (process.env.WECHATPAY_PRIVATE_KEY ? Buffer.from(process.env.WECHATPAY_PRIVATE_KEY) : null);
+  if (!apiclientCert || !apiclientKey) {
+    return { errcode: -2, errmsg: '支付证书缺失，请在 spring_pay 上传 apiclient_cert.pem/apiclient_key.pem 或配置环境变量 WECHATPAY_PLATFORM_CERT/WECHATPAY_PRIVATE_KEY' };
+  }
   
   // 初始化微信支付SDK
   let weChatPay;
@@ -69,8 +80,10 @@ exports.main = async (event, context) => {
   }
   
   console.log('开始创建会员订单:', { planId });
+  if (debug) pushLog({ stage: 'start', planId });
 
   try {
+    let outTradeNo = '';
     // 必须提供 planId
     if (!planId) {
       throw new Error('缺少 planId');
@@ -83,9 +96,27 @@ exports.main = async (event, context) => {
     }
     const planDoc = planRes.data[0];
     let priceCents = planDoc.priceCents;
-    if (typeof priceCents === 'number' && priceCents < 100) {
-      priceCents = Math.round(priceCents * 100);
+    if (debug) pushLog({ stage: 'plan', priceCentsBefore: priceCents, planDoc });
+    const numOrNaN = (v) => (typeof v === 'number' && !isNaN(v));
+    if (!numOrNaN(priceCents) || priceCents <= 0) {
+      if (numOrNaN(planDoc.priceYuan)) {
+        priceCents = planDoc.priceYuan;
+      } else if (numOrNaN(planDoc.price)) {
+        priceCents = planDoc.price;
+      } else if (typeof planDoc.displayPrice === 'string') {
+        const m = planDoc.displayPrice.match(/(\d+(\.\d+)?)/);
+        priceCents = m ? Number(m[1]) : 0;
+      }
     }
+    if (!numOrNaN(priceCents) || priceCents <= 0) {
+      throw new Error('套餐金额未配置');
+    }
+    if (priceCents < 1000) {
+      priceCents = Math.round(priceCents * 100);
+    } else {
+      priceCents = Math.round(priceCents);
+    }
+    if (debug) pushLog({ stage: 'plan', priceCentsAfter: priceCents });
     const durationDays = planDoc.durationDays || 0;
 
     // 获取用户 userId
@@ -93,7 +124,8 @@ exports.main = async (event, context) => {
     const userDoc = userRes.data && userRes.data.length ? userRes.data[0] : null;
 
     // 商户订单号
-    const outTradeNo = `SPRINGVIP_${Date.now()}_${Math.round(Math.random() * 10000)}`;
+    outTradeNo = `SPRINGVIP_${Date.now()}_${Math.round(Math.random() * 10000)}`;
+    if (debug) pushLog({ stage: 'outTradeNo', outTradeNo });
 
     // 存储订单信息到 spring_vip_orders
     const orderData = {
@@ -102,6 +134,7 @@ exports.main = async (event, context) => {
       userId: userDoc ? userDoc.userId : '',
       recommender: userDoc ? (userDoc.recommender || '') : '',
       planId: planId,
+      planName: planDoc.name || '',
       priceCents: Number((priceCents / 100).toFixed(2)),
       status: 'pending',
       out_trade_no: outTradeNo,
@@ -113,6 +146,7 @@ exports.main = async (event, context) => {
     };
 
     await db.collection('spring_vip_orders').add({ data: orderData });
+    if (debug) pushLog({ stage: 'orderSaved' });
 
     // APIv3 JSAPI支付统一下单
     if (!openId) {
@@ -131,12 +165,14 @@ exports.main = async (event, context) => {
     
     console.log('APIv3统一下单参数:', orderParams);
     console.log('用户openid:', wxContext.OPENID);
+    if (debug) pushLog({ stage: 'orderParams', orderParams });
     
     // 使用SDK调用微信支付统一下单接口
     try {
       const result = await weChatPay.transactions_jsapi(orderParams);
       
       console.log('APIv3统一下单返回结果:', result);
+      if (debug) pushLog({ stage: 'jsapiResult', result });
       
       // 检查返回结果，wechatpay-node-v3可能直接返回支付参数
       let prepayId;
@@ -147,17 +183,33 @@ exports.main = async (event, context) => {
       } else {
         throw new Error('获取prepay_id失败: ' + JSON.stringify(result));
       }
+      if (debug) pushLog({ stage: 'prepay', prepayId });
       const payParams = generateMiniProgramPayParams(prepayId, config);
-      return { data: payParams, out_trade_no: outTradeNo };
+      return { data: payParams, out_trade_no: outTradeNo, debugLog: debug ? debugLog : undefined };
     } catch (sdkError) {
       console.error('微信支付SDK调用失败:', sdkError);
-      throw new Error('支付接口调用失败: ' + sdkError.message);
+      if (debug) pushLog({ stage: 'jsapiError', error: String(sdkError && sdkError.message || sdkError) });
+      try {
+        await db.collection('spring_vip_orders').where({ out_trade_no: outTradeNo }).update({
+          data: { status: 'failed', updatedAt: db.serverDate() }
+        });
+      } catch (e) {}
+      return { errcode: -2, errmsg: '支付接口调用失败: ' + (sdkError && sdkError.message || sdkError), raw: String(sdkError), out_trade_no: outTradeNo, debugLog: debug ? debugLog : undefined };
     }
   } catch (error) {
     console.error('创建支付订单失败:', error);
+    if (debug) pushLog({ stage: 'outerError', error: String(error && error.message || error) });
+    try {
+      if (typeof outTradeNo === 'string' && outTradeNo) {
+        await db.collection('spring_vip_orders').where({ out_trade_no: outTradeNo }).update({
+          data: { status: 'failed', updatedAt: db.serverDate() }
+        });
+      }
+    } catch (e) {}
     return {
       errcode: -1,
-      errmsg: error.message || '创建订单失败'
+      errmsg: error.message || '创建订单失败',
+      debugLog: debug ? debugLog : undefined
     };
   }
 };
@@ -219,13 +271,13 @@ exports.activateMember = async (event, context) => {
         transaction_id,
         payTime: Date.now(),
         expireTime,
-        updatedAt: db.serverDate()
+        updatedAt: Date.now()
       }
     });
 
     if (userDoc) {
       await db.collection('springuser').doc(userDoc._id).update({
-        data: { isVip: true, vipExpireTime: expireTime, updateTime: db.serverDate() }
+        data: { isVip: true, vipExpireTime: expireTime, updateTime: Date.now() }
       });
     }
 
