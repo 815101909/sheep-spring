@@ -1614,6 +1614,45 @@
 .postcard-item.flipped:active .postcard-back {
   transform: rotateY(0deg) scale(0.98);
 }
+
+.sheep-chat-shortcut {
+  position: fixed;
+  top: 120rpx;
+  right: 30rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 30rpx;
+  padding: 15rpx 25rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.sheep-chat-shortcut:active {
+  transform: scale(0.95);
+}
+
+.shortcut-icon {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 10rpx;
+}
+
+.shortcut-text {
+  font-size: 24rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+.sheep-chat-shortcut.dark {
+  background: rgba(18, 18, 18, 0.9);
+}
+
+.sheep-chat-shortcut.dark .shortcut-text {
+  color: #ccc;
+}
+
 .difficulty-segment {
   display: flex;
   gap: 32rpx;
@@ -1648,3 +1687,8 @@
     min-height: 32rpx;
   }
 }
+/ *   N�~��[݋�_wceQ�S7h_  * / 
+ 
+ . s h e e p - c h a t - s h o r t c u t   { 
+ 
+ 

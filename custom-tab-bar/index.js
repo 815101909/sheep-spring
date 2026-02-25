@@ -23,33 +23,64 @@ Component({
         text: "仲春蹄印",
         iconPath: "/assets/images/sheep.png",
         selectedIconPath: "/assets/images/sheep.png"
+      },
+      {
+        pagePath: "/pages/sheep-chat/sheep-chat",
+        text: "绵羊对话",
+        iconPath: "/assets/images/sheep.png",
+        selectedIconPath: "/assets/images/sheep.png"
       }
     ]
   },
   attached() {
-    // 获取当前页面路径来设置选中状态
-    const pages = getCurrentPages();
-    if (pages.length > 0) {
-      const currentPage = pages[pages.length - 1];
-      if (currentPage && currentPage.route) {
-        const currentPath = currentPage.route;
-        // 根据当前页面路径设置选中索引
-        if (currentPath.includes('garden')) {
-          this.setData({ selected: 0 });
-        } else if (currentPath.includes('music')) {
-          this.setData({ selected: 1 });
-        } else if (currentPath.includes('hoofprint')) {
-          this.setData({ selected: 2 });
-        }
-      }
-    }
+    this.updateSelectedTab();
     this.setData({ themeClass: themeManager.isDark() ? 'dark' : 'light' });
   },
+  
+  pageLifetimes: {
+    show: function() {
+      // 页面显示时更新选中状态
+      this.updateSelectedTab();
+    }
+  },
+  
   methods: {
+    // 更新选中tab的方法
+    updateSelectedTab() {
+      const pages = getCurrentPages();
+      if (pages.length > 0) {
+        const currentPage = pages[pages.length - 1];
+        if (currentPage && currentPage.route) {
+          const currentPath = currentPage.route;
+          console.log('当前页面路径:', currentPath);
+          
+          // 精确匹配页面路径
+          if (currentPath === 'pages/garden/garden') {
+            this.setData({ selected: 0 });
+          } else if (currentPath === 'pages/music/music') {
+            this.setData({ selected: 1 });
+          } else if (currentPath === 'pages/hoofprint/hoofprint') {
+            this.setData({ selected: 2 });
+          } else if (currentPath === 'pages/sheep-chat/sheep-chat') {
+            this.setData({ selected: 3 });
+          } else {
+            // 默认选中第一个
+            this.setData({ selected: 0 });
+          }
+        }
+      }
+    },
+    
     switchTab(e) {
       getApp().playClickSound();
       const data = e.currentTarget.dataset;
       const url = data.path;
+      const index = data.index;
+      
+      // 更新选中状态
+      this.setData({ selected: index });
+      
+      // 对于tabBar页面，始终使用switchTab
       wx.switchTab({ url });
     },
     updateTheme() {

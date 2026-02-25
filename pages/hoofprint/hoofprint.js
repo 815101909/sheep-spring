@@ -2,6 +2,16 @@
 const favoriteManager = require('../../utils/favoriteManager');
 
 Page({
+  /**
+   * 跳转到绵羊对话页面
+   */
+  openSheepChat: function () {
+    getApp().playClickSound();
+    wx.navigateTo({
+      url: '/pages/sheep-chat/sheep-chat'
+    });
+  },
+
 
   /**
    * 页面的初始数据

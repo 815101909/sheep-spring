@@ -1,0 +1,97 @@
+<!-- pages/sheep-chat/sheep-chat.wxml -->
+<view class="container">
+  <!-- 背景装饰 -->
+  <image class="bg-image" src="/assets/images/splash-bg.png" mode="aspectFill"></image>
+  
+  <!-- 功能选择界面 -->
+  <view class="feature-selection" wx:if="{{showFeatureOptions}}">
+    <view class="circle-layout">
+      <!-- 装饰性圆环 -->
+      <view class="decorative-ring"></view>
+      <view class="decorative-ring inner-ring"></view>
+      
+      <!-- 中心绵羊形象 -->
+      <view class="center-sheep">
+        <image class="sheep-avatar" src="/assets/images/小绵羊.png" mode="aspectFit"></image>
+        <text class="welcome-text">咩～你好呀！</text>
+      </view>
+      
+      <!--围绕的三个功能选项 -->
+      <view class="orbiting-features">
+        <view class="feature-orbit" wx:for="{{features}}" wx:key="id" data-index="{{index}}" 
+              data-id="{{item.id}}" 
+              bindtap="onSelectFeature">
+          <view class="feature-card" 
+                style="background: linear-gradient(135deg, {{item.color}} 0%, {{item.color}}80 100%);">
+            <view class="feature-icon">{{item.icon}}</view>
+            <text class="feature-title">{{item.title}}</text>
+            <text class="feature-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 漂浮的装饰元素 -->
+      <view class="floating-elements">
+        <view class="floating-element" style="left: 20%; top: 15%; animation-delay: 0s;">💭</view>
+        <view class="floating-element" style="left: 80%; top: 25%; animation-delay: 1s;">✨</view>
+        <view class="floating-element" style="left: 15%; top: 75%; animation-delay: 2s;">💕</view>
+        <view class="floating-element" style="left: 85%; top: 80%; animation-delay: 3s;">🌸</view>
+      </view>
+    </view>
+    
+    <view class="hint-text">轻触围绕小绵羊的功能选项，开始温暖的对话之旅吧～</view>
+  </view>
+
+  <!-- 聊天界面 -->
+  <view class="chat-interface" wx:else>
+    <!-- 顶部功能栏 -->
+    <view class="chat-header">
+      <view class="back-btn" bindtap="onBackToFeatures">
+        <text class="back-icon">←</text>
+      </view>
+      <view class="feature-info">
+        <text class="feature-name">{{currentFeature.title}}</text>
+        <text class="feature-subtitle">{{currentFeature.desc}}</text>
+      </view>
+    </view>
+
+    <!-- 聊天区域 -->
+    <scroll-view class="chat-container" scroll-y scroll-with-animation>
+      <view class="messages-list">
+        <view class="message-item" wx:for="{{messages}}" wx:key="id">
+          <!-- 绵羊消息 -->
+          <view class="message sheep-message" wx:if="{{!item.isUser}}">
+            <image class="message-avatar" src="/assets/images/小绵羊.png" mode="aspectFit"></image>
+            <view class="message-bubble sheep-bubble">
+              <text class="message-text">{{item.text}}</text>
+              <view class="message-time">{{item.timestamp.toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'})}}</view>
+            </view>
+          </view>
+          
+          <!-- 用户消息 -->
+          <view class="message user-message" wx:else>
+            <view class="message-bubble user-bubble">
+              <text class="message-text">{{item.text}}</text>
+              <view class="message-time">{{item.timestamp.toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'})}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 输入区域 -->
+    <view class="input-container">
+      <view class="input-wrapper">
+        <input class="message-input" 
+               placeholder="和小绵羊说说话吧..." 
+               value="{{inputValue}}"
+               bindinput="onInput"
+               bindfocus="onInputFocus"
+               bindblur="onInputBlur"
+               confirm-type="send"
+               bindconfirm="onSendMessage" />
+        <button class="send-btn" bindtap="onSendMessage" wx:if="{{inputValue.trim()}}">发送</button>
+      </view>
+    </view>
+  </view>
+</view>

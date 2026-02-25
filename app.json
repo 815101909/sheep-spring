@@ -13,7 +13,8 @@
     "pages/vip/vip",
     "pages/collection/collection",
     "pages/service/service",
-    "pages/weekly-report/weekly-report"
+    "pages/weekly-report/weekly-report",
+    "pages/sheep-chat/sheep-chat"
   ],
   "darkmode": true,
   "themeLocation": "theme.json",
@@ -50,6 +51,12 @@
       {
         "pagePath": "pages/hoofprint/hoofprint",
         "text": "仲春蹄印",
+        "iconPath": "assets/images/sheep.png",
+        "selectedIconPath": "assets/images/sheep.png"
+      },
+      {
+        "pagePath": "pages/sheep-chat/sheep-chat",
+        "text": "绵羊对话",
         "iconPath": "assets/images/sheep.png",
         "selectedIconPath": "assets/images/sheep.png"
       }

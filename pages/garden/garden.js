@@ -529,6 +529,16 @@ Page({
   },
 
   /**
+   * 打开与绵羊对话页面
+   */
+  openSheepChat: function () {
+    getApp().playClickSound();
+    wx.navigateTo({
+      url: '/pages/sheep-chat/sheep-chat'
+    });
+  },
+
+  /**
    * 打开帮助中心
    */
   openHelp: function () {

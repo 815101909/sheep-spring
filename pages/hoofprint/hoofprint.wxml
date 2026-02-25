@@ -4,6 +4,12 @@
   <image class="background-image" src="/assets/images/splash-bg.png" mode="aspectFill" lazy-load="true" />
 </view>
 
+<!-- 与绵羊对话快捷入口 -->
+<view class="sheep-chat-shortcut {{themeClass}}" bindtap="openSheepChat">
+  <image class="shortcut-icon" src="/assets/images/sheep.png" mode="aspectFit" />
+  <text class="shortcut-text">与绵羊对话</text>
+</view>
+
 
 
 <!-- 今日温柔 (Style 5: 横版画册 / 丝带书签 / 立体感) -->
